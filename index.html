@@ -834,6 +834,7 @@ function vCapa(a,rotulo){
     <div class="tx"><small>${esc(rotulo)}</small><b><i></i>${esc(String(a.nome||'').split(' ')[0])}</b></div></div>`;
 }
 function vCapaHoje(a,t,d){
+  if(!a) return '';
   const f=fotoDe(a.id)||a.capa;
   const img=a.capa?`<img src="${esc(a.capa)}" alt="" onerror="this.remove()">`:`<div class="ini">${esc(iniciais(a.nome))}</div>`;
   const nome=esc(String(a.nome||'').split(' ')[0]);
@@ -1177,7 +1178,7 @@ function vModal(){
 function render(){
   let h;
   if(!SES) h=vLogin();
-  else if(carregando) h=vHeader()+'<div class="loading">Carregando…</div>';
+  else if(carregando||!ready) h='<div class="loading">Carregando…</div>';
   else if(ui.view==='editor'&&isP()) h=vEditor();
   else if(ui.view==='aluno'&&isP()) h=vAluno();
   else if(ui.view==='detalhe') h=vDetalhe();
