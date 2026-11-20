@@ -292,6 +292,41 @@ svg{display:block}
 @keyframes flashy{0%,100%{box-shadow:inset 0 0 0 0 transparent}50%{box-shadow:inset 0 0 0 8px var(--y)}}
 body.flash{animation:flashy .45s ease 4}
 
+
+/* perfil */
+.av.f{background-size:cover;background-position:center;color:transparent}
+.pf-top{display:flex;align-items:center;gap:16px;margin-top:18px}
+.pf-av{width:96px;height:96px;border-radius:50%;background:var(--y);color:var(--ytx);display:grid;place-items:center;font-family:'Barlow Condensed';font-weight:800;font-size:38px;flex:none;background-size:cover;background-position:center;position:relative;border:3px solid var(--y)}
+.pf-av.f{color:transparent}
+.pf-cam{position:absolute;right:-4px;bottom:-4px;width:34px;height:34px;border-radius:50%;background:var(--s3);border:2px solid var(--bg);display:grid;place-items:center;color:var(--y)}
+.pf-top h2{font-family:'Barlow Condensed';font-weight:800;font-size:32px;text-transform:uppercase;line-height:1}
+.pf-top p{color:var(--mut);font-size:14px;margin-top:4px}
+.pcard{padding:16px;margin-top:12px}
+.pw{display:flex;align-items:flex-end;gap:10px}
+.pw b{font-family:'Barlow Condensed';font-weight:800;font-size:46px;color:var(--y);line-height:.9}
+.pw span{color:var(--mut);font-size:14px;padding-bottom:4px}
+.pw .dv{margin-left:auto;font-weight:700;font-size:14px;padding:4px 9px;border-radius:20px;background:var(--s2);color:var(--tx)}
+.spark{width:100%;height:70px;margin-top:12px;display:block}
+.plist{margin-top:10px;font-size:13px;color:var(--mut)}
+.plist div{display:flex;align-items:center;padding:6px 0;border-top:1px solid var(--line)}
+.plist div b{color:var(--tx);font-weight:600;margin-left:auto;margin-right:10px}
+.plist button{color:var(--dim);width:26px;height:26px;display:grid;place-items:center}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fl{display:block;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin:0 0 6px}
+.opts{display:flex;flex-wrap:wrap;gap:8px}
+.opt{height:38px;padding:0 14px;border-radius:20px;background:var(--s2);color:var(--mut);font-weight:600;font-size:14px;border:1px solid transparent}
+.opt.on{background:var(--y);color:var(--ytx)}
+.ta{width:100%;min-height:84px;border-radius:12px;background:var(--s1);border:1px solid var(--line);padding:12px 14px;outline:none;resize:vertical;font:inherit;color:var(--tx)}
+.ta:focus{border-color:var(--y)}
+.pfgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.pfgrid div{background:var(--s2);border-radius:10px;padding:10px 12px}
+.pfgrid small{display:block;font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.pfgrid b{font-weight:700;font-size:15px}
+.lim{margin-top:10px;background:rgba(255,90,78,.1);border-left:3px solid var(--red);border-radius:8px;padding:10px 12px;font-size:14px}
+.lim small{display:block;font-size:10px;color:#ff8b82;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:2px}
+.hav{width:34px;height:34px;border-radius:50%;background:var(--y);color:var(--ytx);display:grid;place-items:center;font-family:'Barlow Condensed';font-weight:800;font-size:15px;background-size:cover;background-position:center;flex:none}
+.hav.f{color:transparent}
+
 /* capa */
 .capa{position:relative;height:200px;border-radius:18px;overflow:hidden;margin-top:16px;border:1px solid var(--line);background:repeating-linear-gradient(-55deg,#141416 0 18px,#19191c 18px 36px)}
 .capa img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 8%}
@@ -376,6 +411,7 @@ const IC = {
   grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
   user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
+  cam:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
 };
 const GR = {
   peito:{n:'Peito',i:'<path d="M3.5 7.5c3-2.2 6-2.2 8.5 0 2.5-2.2 5.5-2.2 8.5 0v4.5c0 3.2-3.5 5.5-8.5 5.5S3.5 15.2 3.5 12z"/><path d="M12 7.5v10"/>'},
@@ -461,6 +497,8 @@ const histVazio = ()=>({sessoes:[], ultimas:{}});
 
 let ALU = {personal:{codigo:'personal'}, lista:[]}; // alunos + códigos
 let BIB = {customEx:[], videos:{}};                  // biblioteca compartilhada
+let PERF = {};  // alunoId -> perfil (preenchido pelo aluno)
+const perfVazio = ()=>({nascimento:'',altura:'',objetivo:'',objetivoTxt:'',nivel:'',dias:'',limitacoes:'',pesos:[],foto:''});
 let PROG = {};  // alunoId -> programa
 let HIST = {};  // alunoId -> histórico
 let S = progVazio(), H = histVazio(); // programa/histórico do aluno em foco
@@ -512,8 +550,8 @@ const vIcon = exId=>{const v=vidInfo(exId);return `<a class="vic ${v.escolhido?'
 let db = null;
 const cloud = {on:false, busy:{}, pend:{}, tm:{}, subs:{}};
 let sync = 'local';
-const caminho = k=>k==='alunos'?'plano/alunos':k==='bib'?'plano/biblioteca':k.startsWith('prog:')?'plano/p_'+k.slice(5):'registros/h_'+k.slice(5);
-const dados = k=>k==='alunos'?ALU:k==='bib'?BIB:k.startsWith('prog:')?PROG[k.slice(5)]:HIST[k.slice(5)];
+const caminho = k=>k==='alunos'?'plano/alunos':k==='bib'?'plano/biblioteca':k.startsWith('prog:')?'plano/p_'+k.slice(5):k.startsWith('perfil:')?'registros/u_'+k.slice(7):'registros/h_'+k.slice(5);
+const dados = k=>k==='alunos'?ALU:k==='bib'?BIB:k.startsWith('prog:')?PROG[k.slice(5)]:k.startsWith('perfil:')?PERF[k.slice(7)]:HIST[k.slice(5)];
 function persist(k){
   const d=dados(k); if(!d) return;
   lsSet(k,d);
@@ -575,10 +613,11 @@ async function carregaSessao(){
   try{
     const ids=SES.papel==='personal'?ALU.lista.map(a=>a.id):[SES.alunoId];
     await Promise.all(ids.map(async id=>{
-      const [p,h]=await Promise.all([ler('prog:'+id),ler('hist:'+id)]);
-      PROG[id]=p||progVazio(); HIST[id]=h||histVazio();
+      const [p,h,u]=await Promise.all([ler('prog:'+id),ler('hist:'+id),ler('perfil:'+id)]);
+      PROG[id]=p||progVazio(); HIST[id]=h||histVazio(); PERF[id]={...perfVazio(),...(u||{})};
     }));
     if(SES.papel==='personal'){
+      ids.forEach(id=>ouvir('perfil:'+id,d=>{PERF[id]={...perfVazio(),...d};if(ui.view!=='editor')render()}));
       ids.forEach(id=>ouvir('hist:'+id,d=>{HIST[id]=d;fixaHist(d);if(ui.alunoSel===id)foco(id);if(ui.view!=='editor')render()}));
     } else {
       const id=SES.alunoId;
@@ -646,7 +685,7 @@ function entrar(nome,codigo){
 function vHeader(){
   return `<header class="top"><div class="top-in">
     <div class="logo"><i></i>CARGA</div>
-    <span class="who ${isP()?'p':''}">${isP()?'Personal':esc((SES.nome||'Aluno').split(' ')[0])}</span>
+    ${isP()?'<span class="who p">Personal</span>':(()=>{const a=alunoById(SES.alunoId);return a?`<button data-a="tab" data-t="perfil" aria-label="Perfil">${avHtml(a,'hav')}</button>`:''})()}
     <div id="sync" class="sync ${sync}"><b></b><span>${syncTxt()}</span></div>
     ${isP()?`<button class="ib" data-a="acesso" aria-label="Seu código">${P(IC.key,18)}</button>`:''}
     <button class="ib" data-a="sair" aria-label="Sair">${P(IC.out,18)}</button>
@@ -654,18 +693,92 @@ function vHeader(){
 }
 function vNav(){
   const it=isP()?[['painel','Painel','grid'],['treinos','Treinos','dumb'],['semana','Semana','cal'],['historico','Histórico','clock'],['biblioteca','Exercícios','book']]
-               :[['treinos','Treinos','dumb'],['semana','Semana','cal'],['historico','Histórico','clock']];
+               :[['treinos','Treinos','dumb'],['semana','Semana','cal'],['historico','Histórico','clock'],['perfil','Perfil','user']];
   return `<nav class="nav"><div class="nav-in" style="grid-template-columns:repeat(${it.length},1fr)">${it.map(([k,l,i])=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${P(IC[i],22)}${l}</button>`).join('')}</div></nav>`;
+}
+const fotoDe = id=>(PERF[id]&&PERF[id].foto)||'';
+const avHtml = (a,cls='av')=>{const f=fotoDe(a.id);return `<div class="${cls} ${f?'f':''}" ${f?`style="background-image:url('${f}')"`:''}>${esc(iniciais(a.nome))}</div>`};
+const idade = n=>{if(!n)return null;const d=new Date(n+'T00:00');if(isNaN(d))return null;const h=new Date();let i=h.getFullYear()-d.getFullYear();if(h<new Date(h.getFullYear(),d.getMonth(),d.getDate()))i--;return i>0&&i<120?i:null};
+const pesoAtual = pf=>pf&&pf.pesos&&pf.pesos.length?pf.pesos[pf.pesos.length-1]:null;
+const fmtKg = v=>(Math.round(num(v)*10)/10).toLocaleString('pt-BR');
+const OBJS=['Hipertrofia','Emagrecimento','Condicionamento','Força','Saúde e bem-estar'];
+const NIVEIS=['Iniciante','Intermediário','Avançado'];
+function spark(pesos){
+  if(!pesos||pesos.length<2) return '';
+  const v=pesos.map(p=>num(p.kg)), mn=Math.min(...v), mx=Math.max(...v), r=(mx-mn)||1, W=300, Hh=70;
+  const pts=v.map((y,i)=>[i/(v.length-1)*(W-12)+6, Hh-8-(y-mn)/r*(Hh-20)]);
+  return `<svg class="spark" viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="none"><polyline fill="none" stroke="#FFD400" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="${pts.map(p=>p.join(',')).join(' ')}"/>${pts.map((p,i)=>i===pts.length-1?`<circle cx="${p[0]}" cy="${p[1]}" r="4.5" fill="#FFD400"/>`:'').join('')}</svg>`;
+}
+function vPerfil(){
+  const id=SES.alunoId, a=alunoById(id); if(!a) return '';
+  const pf=PERF[id]=PERF[id]||perfVazio(), pa=pesoAtual(pf), p0=pf.pesos&&pf.pesos[0], ida=idade(pf.nascimento);
+  const dv=pa&&p0&&pf.pesos.length>1?num(pa.kg)-num(p0.kg):null;
+  const ops=(k,lista)=>`<div class="opts">${lista.map(o=>`<button class="opt ${pf[k]===o?'on':''}" data-a="pfOpt" data-k="${k}" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>`;
+  return `<main class="wrap" style="padding-bottom:110px">
+    <div class="pf-top">
+      <button class="pf-av ${pf.foto?'f':''}" data-a="trocarFoto" ${pf.foto?`style="background-image:url('${pf.foto}')"`:''} aria-label="Trocar foto">${esc(iniciais(a.nome))}<span class="pf-cam">${P(IC.cam,16)}</span></button>
+      <div><h2>${esc(a.nome)}</h2><p>${[ida?ida+' anos':'',pf.altura?pf.altura+' cm':'',pa?fmtKg(pa.kg)+' kg':''].filter(Boolean).join(' · ')||'Complete seu perfil'}</p>
+      ${pf.foto?`<button class="link" style="color:var(--mut);font-size:13px;padding:4px 0" data-a="tirarFoto">Remover foto</button>`:''}</div>
+    </div>
+    <input type="file" id="fotoIn" accept="image/*" hidden>
+
+    <div class="card pcard">
+      <div class="fl">Peso</div>
+      ${pa?`<div class="pw"><b>${fmtKg(pa.kg)}</b><span>kg · ${quando(pa.data)}</span>${dv!==null?`<span class="dv">${dv>0?'+':''}${fmtKg(dv)} kg desde o início</span>`:''}</div>${spark(pf.pesos)}`
+        :'<p style="color:var(--mut)">Registre seu peso pra acompanhar a evolução.</p>'}
+      <button class="btn y sm" style="margin-top:12px" data-a="novoPeso">${P(IC.plus,16)} Registrar peso</button>
+      ${pf.pesos.length?`<div class="plist">${[...pf.pesos].map((p,i)=>({...p,i})).reverse().slice(0,5).map(p=>`<div>${fmtData(p.data)}<b>${fmtKg(p.kg)} kg</b><button data-a="delPeso" data-i="${p.i}" aria-label="Apagar">${P(IC.x,14)}</button></div>`).join('')}</div>`:''}
+    </div>
+
+    <div class="lbl">Sobre você</div>
+    <div class="f2">
+      <label><span class="fl">Nascimento</span><input class="inp" type="date" data-f="pf" data-k="nascimento" value="${esc(pf.nascimento)}"></label>
+      <label><span class="fl">Altura (cm)</span><input class="inp" inputmode="numeric" data-f="pf" data-k="altura" placeholder="165" value="${esc(pf.altura)}"></label>
+    </div>
+
+    <div class="lbl">Objetivo</div>
+    ${ops('objetivo',OBJS)}
+    <input class="inp" style="margin-top:10px" data-f="pf" data-k="objetivoTxt" placeholder="Conte com suas palavras (opcional)" value="${esc(pf.objetivoTxt)}">
+
+    <div class="lbl">Nível</div>
+    ${ops('nivel',NIVEIS)}
+
+    <div class="lbl">Dias por semana que consegue treinar</div>
+    ${ops('dias',['2','3','4','5','6'])}
+
+    <div class="lbl">Dores, lesões ou limitações</div>
+    <textarea class="ta" data-f="pf" data-k="limitacoes" placeholder="Ex.: dor no joelho direito ao agachar fundo">${esc(pf.limitacoes)}</textarea>
+    <p style="font-size:12px;color:var(--dim);margin-top:8px">Tudo aqui é salvo automaticamente e ajuda seu personal a ajustar o treino.</p>
+  </main>`;
+}
+function vPerfilResumo(id){
+  const pf=PERF[id]; if(!pf) return '';
+  const pa=pesoAtual(pf), p0=pf.pesos&&pf.pesos[0], ida=idade(pf.nascimento);
+  const dv=pa&&p0&&pf.pesos.length>1?num(pa.kg)-num(p0.kg):null;
+  const vazio=!pa&&!pf.objetivo&&!pf.nivel&&!pf.altura&&!pf.limitacoes&&!ida;
+  if(vazio) return `<div class="lbl">Perfil</div><div class="card empty" style="padding:20px">O aluno ainda não preencheu o perfil.</div>`;
+  const it=(l,v)=>v?`<div><small>${l}</small><b>${v}</b></div>`:'';
+  return `<div class="lbl">Perfil</div><div class="card pcard" style="margin-top:0">
+    <div class="pfgrid">
+      ${it('Objetivo',esc(pf.objetivo||''))}${it('Nível',esc(pf.nivel||''))}
+      ${it('Peso',pa?fmtKg(pa.kg)+' kg'+(dv!==null?` <span style="color:var(--y);font-size:13px">(${dv>0?'+':''}${fmtKg(dv)})</span>`:''):'')}
+      ${it('Idade · altura',[ida?ida+' anos':'',pf.altura?pf.altura+' cm':''].filter(Boolean).join(' · '))}
+      ${it('Disponibilidade',pf.dias?pf.dias+'x por semana':'')}
+    </div>
+    ${pf.objetivoTxt?`<p style="margin-top:10px;font-size:14px;color:var(--mut)">“${esc(pf.objetivoTxt)}”</p>`:''}
+    ${spark(pf.pesos)}
+    ${pf.limitacoes?`<div class="lim"><small>Limitações</small>${esc(pf.limitacoes)}</div>`:''}
+  </div>`;
 }
 function vSelBar(){
   const a=alunoById(ui.alunoSel);
   if(!a) return '';
-  return `<button class="selbar" data-a="escolherAluno"><div class="av">${esc(iniciais(a.nome))}</div>
+  return `<button class="selbar" data-a="escolherAluno">${avHtml(a)}
     <div class="info"><small>Aluno</small><b>${esc(a.nome)}</b></div><span class="link" style="padding:0">Trocar</span></button>`;
 }
 function semAluno(titulo){
   return `<main class="wrap" style="padding-bottom:100px"><div class="ph"><h1>${titulo}</h1><p>Escolha um aluno pra ver ${titulo.toLowerCase()}.</p></div>
-    ${ALU.lista.length?`<div class="tl">${ALU.lista.map(a=>`<button class="card selbar" style="margin:0" data-a="selAluno" data-id="${a.id}"><div class="av">${esc(iniciais(a.nome))}</div><div class="info"><b>${esc(a.nome)}</b></div>${P(IC.right,18)}</button>`).join('')}</div>`
+    ${ALU.lista.length?`<div class="tl">${ALU.lista.map(a=>`<button class="card selbar" style="margin:0" data-a="selAluno" data-id="${a.id}">${avHtml(a)}<div class="info"><b>${esc(a.nome)}</b></div>${P(IC.right,18)}</button>`).join('')}</div>`
     :`<div class="card empty">Nenhum aluno cadastrado.<br><button class="btn y sm" style="margin-top:14px" data-a="novoAluno">${P(IC.plus,16)} Cadastrar aluno</button></div>`}
   </main>`;
 }
@@ -694,7 +807,7 @@ function vPainel(){
     ${ordem.length?`<div class="tl">${ordem.map(({a,m})=>{
       const pct=m.planSemana?Math.min(100,m.feitosSemana/m.planSemana*100):0;
       return `<div class="card"><button class="ac" data-a="abrirAluno" data-id="${a.id}">
-        <div class="ac-h"><div class="av">${esc(iniciais(a.nome))}</div>
+        <div class="ac-h">${avHtml(a)}
           <div class="info"><b>${esc(a.nome)}</b><small>${esc(faseInfo(m.p.faseAtiva,m.p).nome)}${faseInfo(m.p.faseAtiva,m.p).sub?' · '+esc(faseInfo(m.p.faseAtiva,m.p).sub):''}</small></div>
           <span class="st ${m.status.c}">${esc(m.status.t)}</span></div>
         <div class="wk">${ORDEM.map((dd,i)=>`<div><i class="${m.diasFeitos.has(dd)&&i<=w?'done':m.diasPlan.has(dd)?'plan':''} ${i===w?'today':''}"></i>${DIAS[dd][0]}</div>`).join('')}</div>
@@ -829,7 +942,7 @@ function vAluno(){
     <main class="wrap" style="padding-bottom:60px">
       ${vCapa(a,'Aluno')}
       <div class="card ac" style="margin-top:12px">
-        <div class="ac-h"><div class="av">${esc(iniciais(a.nome))}</div>
+        <div class="ac-h">${avHtml(a)}
           <div class="info"><b>${esc(a.nome)}</b><small>Código: <b style="display:inline;font-size:13px;color:var(--y)">${esc(a.codigo)}</b></small></div>
           <span class="st ${m.status.c}">${esc(m.status.t)}</span></div>
         <div class="ac-f"><span>Fase ativa: <b>${esc(f.nome)}${f.sub?' · '+esc(f.sub):''}</b></span>
@@ -837,6 +950,7 @@ function vAluno(){
           <span>Total: <b>${m.h.sessoes.length}</b> treinos</span>
           ${m.destaque?`<span>Evolução: <b>${esc(m.destaque.nome)}</b> <span class="up">${m.destaque.ini}→${m.destaque.fim} kg</span></span>`:''}</div>
       </div>
+      ${vPerfilResumo(a.id)}
       <div class="lbl">Ações</div>
       <div class="tl">
         <button class="card selbar" style="margin:0" data-a="tab" data-t="treinos"><div class="gi">${P(IC.dumb,20)}</div><div class="info"><b>Treinos e fases</b><small>${m.p.treinos.length} treinos cadastrados</small></div>${P(IC.right,18)}</button>
@@ -954,7 +1068,7 @@ function vModal(){
   const m=ui.modal;
   if(m.tipo==='escolherAluno') return `<div class="ov" data-a="fecharModal" data-self="1"><div class="sheet" style="height:auto;max-height:80vh">
     <div class="sheet-h"><b>Escolher aluno</b><button class="ib" data-a="fecharModal">${P(IC.x,18)}</button></div>
-    <div class="sheet-b" style="padding-bottom:20px"><div class="tl">${ALU.lista.map(a=>`<button class="card selbar" style="margin:0;${a.id===ui.alunoSel?'border-color:var(--y)':''}" data-a="selAluno" data-id="${a.id}"><div class="av">${esc(iniciais(a.nome))}</div><div class="info"><b>${esc(a.nome)}</b></div>${a.id===ui.alunoSel?P(IC.check,18):''}</button>`).join('')}</div></div>
+    <div class="sheet-b" style="padding-bottom:20px"><div class="tl">${ALU.lista.map(a=>`<button class="card selbar" style="margin:0;${a.id===ui.alunoSel?'border-color:var(--y)':''}" data-a="selAluno" data-id="${a.id}">${avHtml(a)}<div class="info"><b>${esc(a.nome)}</b></div>${a.id===ui.alunoSel?P(IC.check,18):''}</button>`).join('')}</div></div>
   </div></div>`;
   if(m.tipo==='aluno'){
     const a=m.id?alunoById(m.id):null, p=a?(PROG[a.id]||progVazio()):null;
@@ -989,6 +1103,12 @@ function vModal(){
     <label>Seu código</label><input class="inp" name="pc" required value="${esc(ALU.personal.codigo)}">
     <div class="row" style="margin-top:20px"><button type="button" class="btn dark" data-a="fecharModal">Cancelar</button><button class="btn y">Salvar</button></div>
   </form></div>`;
+  if(m.tipo==='peso'){const hj=new Date();const v=`${hj.getFullYear()}-${String(hj.getMonth()+1).padStart(2,'0')}-${String(hj.getDate()).padStart(2,'0')}`;const pa=pesoAtual(PERF[SES.alunoId]);return `<div class="ov c" data-a="fecharModal" data-self="1"><form class="dlg" id="fPeso">
+    <h3>Registrar peso</h3><p>Pese-se de preferência no mesmo horário, pra comparar melhor.</p>
+    <div class="f2"><label><span class="fl">Peso (kg)</span><input class="inp" name="kg" inputmode="decimal" required placeholder="${pa?esc(fmtKg(pa.kg)):'60,5'}"></label>
+    <label><span class="fl">Data</span><input class="inp" type="date" name="data" value="${v}" required></label></div>
+    <div class="row" style="margin-top:20px"><button type="button" class="btn dark" data-a="fecharModal">Cancelar</button><button class="btn y">Salvar</button></div>
+  </form></div>`}
   if(m.tipo==='fim'){const r=m.r;return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg"><h3>Finalizar treino?</h3>
     <div class="sumg"><div><b>${r.feitas}/${r.tot}</b><small>Séries</small></div><div><b>${r.vol?Math.round(r.vol).toLocaleString('pt-BR'):'–'}</b><small>Kg levantados</small></div><div><b>${esc(r.dur)}</b><small>Tempo</small></div></div>
     ${r.faltam?`<div class="warn">Faltaram ${r.faltam} série${r.faltam>1?'s':''}${r.exFalt?` em ${r.exFalt} exercício${r.exFalt>1?'s':''}`:''}. Dá pra voltar e terminar, ou salvar assim mesmo.</div>`:''}
@@ -1008,7 +1128,8 @@ function render(){
   else if(ui.view==='treino') h=vTreino();
   else {
     if(!isP()&&(ui.tab==='biblioteca'||ui.tab==='painel')) ui.tab='treinos';
-    h=vHeader()+({painel:vPainel,treinos:vTreinos,semana:vSemana,biblioteca:vBiblioteca,historico:vHistorico}[ui.tab])()+vNav();
+    if(isP()&&ui.tab==='perfil') ui.tab='painel';
+    h=vHeader()+({painel:vPainel,treinos:vTreinos,semana:vSemana,biblioteca:vBiblioteca,historico:vHistorico,perfil:vPerfil}[ui.tab])()+vNav();
   }
   if(h===undefined) return;
   $('#app').innerHTML=h;
@@ -1086,6 +1207,11 @@ const acts = {
     if(done&&depois!==antes&&depois>=0) setTimeout(()=>{const el=document.getElementById('wx-'+depois);el&&el.scrollIntoView({behavior:'smooth',block:'start'})},60);
     if(s.feito&&depois===-1) toast('Todas as séries feitas! Toque em Finalizar 🎉');
   },
+  pfOpt:d=>{const id=SES.alunoId,pf=PERF[id];pf[d.k]=pf[d.k]===d.v?'':d.v;persist('perfil:'+id);render()},
+  trocarFoto:()=>{const i=$('#fotoIn');i&&i.click()},
+  tirarFoto:()=>confirmar({titulo:'Remover foto?',texto:'Sua foto de perfil volta a ser as iniciais.',ok:'Remover',perigo:true},()=>{const id=SES.alunoId;PERF[id].foto='';persist('perfil:'+id);render()}),
+  novoPeso:()=>{ui.modal={tipo:'peso'};renderOv();setTimeout(()=>{const i=document.querySelector('#fPeso [name=kg]');i&&i.focus()},50)},
+  delPeso:d=>confirmar({titulo:'Apagar registro?',texto:'Esse registro de peso sai da sua evolução.',ok:'Apagar',perigo:true},()=>{const id=SES.alunoId;PERF[id].pesos.splice(+d.i,1);persist('perfil:'+id);render()}),
   wxToggle:d=>{const i=+d.i;if(i===atualIdx())return;ui.wxOpen=ui.wxOpen||[];ui.wxOpen=ui.wxOpen.includes(i)?ui.wxOpen.filter(x=>x!==i):[...ui.wxOpen,i];render()},
   addSerie:d=>{const it=A.itens[+d.i],u=it.series[it.series.length-1]||{carga:'',reps:''};it.series.push({carga:u.carga,reps:u.reps,feito:false});lsSet('ativa',A);render()},
   remSerie:d=>{A.itens[+d.i].series.pop();lsSet('ativa',A);render()},
@@ -1130,6 +1256,7 @@ document.addEventListener('input',e=>{
   if(f==='busca'){ui.busca=el.value;$('#libList').innerHTML=listaEx(filtraEx(ui.filtro,ui.busca));return}
   if(f==='pbusca'){ui.picker.busca=el.value;$('#pickList').innerHTML=listaEx(filtraEx(ui.picker.filtro,ui.picker.busca),ui.picker.sel);return}
   if(f==='set'){A.itens[+el.dataset.i].series[+el.dataset.s][el.dataset.k]=el.value;lsSet('ativa',A);return}
+  if(f==='pf'&&!isP()){const id=SES.alunoId;PERF[id][el.dataset.k]=el.value;persist('perfil:'+id);return}
   if(f==='nomeNovo'){const c=$('#codNovo');if(c&&(!c.value||c.dataset.auto==='1')){c.value=el.value.trim()?sugereCodigo(el.value):'';c.dataset.auto='1'}return}
   if(!isP()) return;
   const t=tById(ui.editId); if(!t||ui.view!=='editor') return;
@@ -1138,10 +1265,26 @@ document.addEventListener('input',e=>{
   else if(f==='ex'){const x=t.exercicios.find(x=>x.uid===el.dataset.u);if(x)x[el.dataset.k]=el.value}
   tocar(t);
 });
+document.addEventListener('change',e=>{
+  if(e.target.id!=='fotoIn'||!e.target.files||!e.target.files[0]) return;
+  const file=e.target.files[0], rd=new FileReader();
+  rd.onload=()=>{const img=new Image();img.onload=()=>{
+    const S2=360,c=document.createElement('canvas');c.width=c.height=S2;const ctx=c.getContext('2d');
+    const m=Math.min(img.width,img.height);ctx.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S2,S2);
+    const id=SES.alunoId;PERF[id].foto=c.toDataURL('image/jpeg',.82);persist('perfil:'+id);render();toast('Foto atualizada');
+  };img.onerror=()=>toast('Não consegui abrir essa imagem');img.src=rd.result};
+  rd.readAsDataURL(file);
+});
 document.addEventListener('submit',e=>{
   e.preventDefault();
   const id=e.target.id, fd=new FormData(e.target);
   if(id==='fLogin') return entrar(fd.get('nome'),fd.get('codigo'));
+  if(id==='fPeso'){
+    const kg=num(fd.get('kg')), dt=new Date(String(fd.get('data'))+'T12:00').getTime();
+    if(!(kg>20&&kg<400)) return toast('Peso inválido');
+    const aid=SES.alunoId, pf=PERF[aid]; pf.pesos.push({kg,data:isNaN(dt)?Date.now():dt}); pf.pesos.sort((x,y)=>x.data-y.data);
+    persist('perfil:'+aid); ui.modal=null; render(); toast('Peso registrado'); return;
+  }
   if(id==='fAluno'){
     const aid=e.target.dataset.id, nome=String(fd.get('nome')).trim(), cod=String(fd.get('codigo')).trim().toUpperCase();
     if(!nome) return toast('Digite o nome');
