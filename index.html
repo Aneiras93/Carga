@@ -412,6 +412,27 @@ html.ios-tab main{padding-bottom:170px!important}
 .day.today.off .dn{background:var(--y);padding:10px 0}
 .day.today.off .dn b,.day.today.off .dn small{color:var(--ytx)}
 
+
+/* ===== evolução, check-in, mensagem ===== */
+.poses{display:flex;gap:8px;margin-top:4px}
+.cmp{position:relative;width:100%;aspect-ratio:3/4;border-radius:16px;overflow:hidden;background:var(--s2);margin-top:12px;touch-action:pan-y}
+.cmp img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cmp .lado{position:absolute;bottom:10px;font-size:12px;font-weight:700;background:rgba(27,30,28,.65);color:#fff;padding:5px 9px;border-radius:8px}
+.cmp .lado.a{left:10px}.cmp .lado.b{right:10px}
+.cmp .div{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.15);pointer-events:none}
+.cmp .div:after{content:"";position:absolute;top:50%;left:50%;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.cmp input[type=range]{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:ew-resize}
+.sel2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sel2 select{height:42px;font-size:14px}
+.thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.thumbs button{position:relative;aspect-ratio:3/4;border-radius:10px;overflow:hidden;background:var(--s2)}
+.thumbs img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs span{position:absolute;left:6px;bottom:6px;font-size:11px;font-weight:700;background:rgba(27,30,28,.6);color:#fff;padding:2px 6px;border-radius:6px}
+.story{width:100%;border-radius:14px;display:block;box-shadow:0 6px 20px rgba(27,30,28,.18);margin:4px 0 14px}
+.msgbox{white-space:pre-wrap;background:var(--s2);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.45;max-height:42vh;overflow:auto;margin-bottom:14px}
+.btn.wa{background:#1F7A4D;color:#fff}
+.col{display:flex;flex-direction:column;gap:8px}
+
 /* capa */
 .capa{position:relative;height:200px;border-radius:18px;overflow:hidden;margin-top:16px;background:#2F5645 repeating-linear-gradient(-55deg,rgba(255,255,255,.03) 0 18px,transparent 18px 36px)}
 .capa img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 8%}
@@ -472,6 +493,10 @@ html,body{overflow-x:hidden}
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <meta name="theme-color" content="#F5F2EC">
+<script>window.FB_CFG={apiKey:"AIzaSyBEzMjW9vsvgV-NpP-uOu3F6rKyDrVPrGU",authDomain:"app-carga-e1078.firebaseapp.com",projectId:"app-carga-e1078",storageBucket:"app-carga-e1078.firebasestorage.app",messagingSenderId:"60220697583",appId:"1:60220697583:web:38225197880eec5523241a"};</script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -507,6 +532,8 @@ const IC = {
   grid:'<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>',
   edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
   user:'<circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-6 7-6s7 2.5 7 6"/>',
+  img:'<rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M4 17l5-4.5 4 3.5 3-2.5 4 3.5"/>',
+  share:'<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 13v6h14v-6"/>',
   cam:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
 };
 const GR = {
@@ -660,7 +687,7 @@ async function flush(k){
   if(cloud.busy[k]){cloud.pend[k]=true;return}
   const d=dados(k); if(!d) return;
   cloud.busy[k]=true;
-  try{ await db.doc(caminho(k)).set(clone(d)); setSync('ok') }
+  try{ if(FB) await fbSet(k,d); else await db.doc(caminho(k)).set(clone(d)); setSync('ok') }
   catch(e){ setSync('err'); toast(k.startsWith('hist:')?'Não foi possível salvar o treino na nuvem':'Não foi possível salvar na nuvem') }
   cloud.busy[k]=false;
   if(cloud.pend[k]){cloud.pend[k]=false;flush(k)}
@@ -668,21 +695,24 @@ async function flush(k){
 async function apagar(k){
   lsSet(k,null);
   if(!cloud.on) return;
-  try{ await db.doc(caminho(k)).delete() }catch(e){}
+  try{ if(FB) await fbRef(k).doc.delete(); else await db.doc(caminho(k)).delete() }catch(e){}
 }
 function setSync(s){sync=s;const el=$('#sync');if(el){el.className='sync '+s;el.lastElementChild.textContent=syncTxt()}}
 const syncTxt=()=>sync==='ok'?'Sincronizado':sync==='err'?'Erro ao salvar':'Só neste aparelho';
 
 async function ler(k){
+  if(cloud.on&&FB) return fbGet(k);
   if(cloud.on){ const s=await db.doc(caminho(k)).get(); return s.exists&&s.data()?clone(s.data()):null }
   if(k.startsWith('prog:')||k==='alunos'||k==='bib') return EMBED[k]?clone(EMBED[k]):lsGet(k,null);
   return lsGet(k,null);
 }
 function ouvir(k,aplica){
   if(!cloud.on||cloud.subs[k]) return;
+  if(FB){try{const r=fbRef(k);cloud.subs[k]=true;r.doc.onSnapshot(snap=>{try{if(cloud.busy[k]||snap.metadata.hasPendingWrites)return;const v=snap.exists&&snap.data()[r.field];if(v)aplica(clone(v))}catch(e){}})}catch(e){}return}
   try{const r=db.doc(caminho(k));if(typeof r.onSnapshot==='function'){cloud.subs[k]=true;r.onSnapshot(snap=>{try{if(cloud.busy[k])return;if(snap&&snap.exists&&snap.data()) aplica(clone(snap.data()))}catch(e){}})}}catch(e){}
 }
 async function initCloud(){
+  if(FB){try{await fbInit()}catch(e){ready=true;cloud.on=false;toast('Sem conexão com o servidor');render()}return}
   const timer=setTimeout(()=>{if(!ready){cloud.on=false;baseLocal()}},10000);
   try{
     if(!window.claude||!window.claude.use) throw 0;
@@ -726,6 +756,107 @@ async function carregaSessao(){
   render();
 }
 
+/* ============ FIREBASE (versão hospedada) ============ */
+const FB=!!window.FB_CFG;
+let fs=null, fauth=null, fuser=null;
+const ALFA='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function gerarCodigo(){const a=new Uint32Array(8);crypto.getRandomValues(a);const c=[...a].map(n=>ALFA[n%ALFA.length]).join('');return c.slice(0,4)+'-'+c.slice(4)}
+const limpaCod=c=>String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+async function keyDe(c){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('carga:'+limpaCod(c)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function fbRef(k){
+  if(k==='alunos') return {doc:fs.collection('personal').doc(fuser.uid),field:'alunos'};
+  if(k==='bib') return {doc:fs.collection('publico').doc('bib'),field:'bib'};
+  if(k.startsWith('prog:')) return {doc:fs.collection('contas').doc(k.slice(5)),field:'prog'};
+  if(k.startsWith('perfil:')) return {doc:fs.collection('registros').doc(k.slice(7)),field:'perfil'};
+  return {doc:fs.collection('registros').doc(k.slice(5)),field:'hist'};
+}
+function alunosParaSalvar(){const a=clone(ALU);a.lista.forEach(x=>delete x.capa);return a}
+async function fbGet(k){const r=fbRef(k);const sn=await r.doc.get();const v=sn.exists?sn.data()[r.field]:null;return v?clone(v):null}
+async function fbSet(k,d){const r=fbRef(k);await r.doc.set({[r.field]:clone(k==='alunos'?alunosParaSalvar():d)},{merge:true});
+  if(k==='alunos') await Promise.all(ALU.lista.map(a=>fs.collection('contas').doc(a.id).set({nome:a.nome},{merge:true})))}
+async function fbInit(){
+  firebase.initializeApp(window.FB_CFG);
+  fs=firebase.firestore();
+  try{await fs.enablePersistence({synchronizeTabs:true})}catch(e){}
+  fauth=firebase.auth();
+  fuser=await new Promise(r=>{const off=fauth.onAuthStateChanged(u=>{off();r(u)})});
+  cloud.on=true; setSync('ok');
+  if(SES&&SES.papel==='personal'){ if(fuser) await fbPersonal(); else {SES=null;lsSet('sessao',null)} }
+  else if(SES&&SES.papel==='aluno'){ if(!(await fbAluno(SES.alunoId))){SES=null;lsSet('sessao',null)} }
+  ready=true; await carregaSessao();
+}
+async function fbPersonal(){
+  let a=await fbGet('alunos');
+  if(!a) a=await fbSemear();
+  ALU=a; fixaBase();
+  BIB=(await fbGet('bib'))||BIB; fixaBase();
+  await Promise.all(ALU.lista.map(async x=>{try{const sn=await fs.collection('contas').doc(x.id).get();if(sn.exists&&sn.data().capa)x.capa=sn.data().capa}catch(e){}}));
+}
+async function fbAluno(key){
+  const sn=await fs.collection('contas').doc(key).get();
+  if(!sn.exists) return false;
+  const d=sn.data();
+  ALU={personal:{codigo:''},lista:[{id:key,nome:d.nome||'Aluno',capa:d.capa||''}]};
+  BIB=(await fbGet('bib'))||BIB; fixaBase();
+  await migrarLocal(key);
+  return true;
+}
+async function fbSemear(){ // primeira vez: leva o programa e a Laura pro Firebase
+  const E=(typeof EMBED!=='undefined'&&EMBED)||{}, base=(E.alunos&&E.alunos.lista)||[];
+  const lista=[];
+  for(const x of base){
+    const codigo=gerarCodigo(), id=await keyDe(codigo);
+    lista.push({id,nome:x.nome,codigo,whats:'',criadoEm:x.criadoEm||Date.now()});
+    await fs.collection('contas').doc(id).set({nome:x.nome,capa:x.capa||'',prog:clone(E['prog:'+x.id]||progVazio())});
+  }
+  const a={personal:{codigo:''},lista};
+  await fs.collection('personal').doc(fuser.uid).set({alunos:a});
+  if(E.bib) await fs.collection('publico').doc('bib').set({bib:clone(E.bib)});
+  return a;
+}
+async function migrarLocal(key){ // histórico, perfil e fotos da versão anterior (só neste aparelho)
+  try{
+    const ant=['a1'];
+    for(const old of ant){
+      const h=lsGet('hist:'+old,null), u=lsGet('perfil:'+old,null);
+      if(h||u){
+        const sn=await fs.collection('registros').doc(key).get();const cur=sn.exists?sn.data():{};
+        const up={};
+        if(h&&(!cur.hist||!(cur.hist.sessoes||[]).length)) up.hist=clone(h);
+        if(u&&!cur.perfil) up.perfil=clone(u);
+        if(Object.keys(up).length) await fs.collection('registros').doc(key).set(up,{merge:true});
+        lsSet('hist:'+old,null); lsSet('perfil:'+old,null);
+      }
+      try{const t=await fdb.all();for(const f of (t||[])) if(f.alunoId===old){f.alunoId=key;await fdb.put(f)}}catch(e){}
+    }
+  }catch(e){}
+}
+async function entrarFB(codigo){
+  const c=limpaCod(codigo);
+  if(!c){ui.loginErr='Digite o código.';return render()}
+  ui.loginBusy=true;render();
+  try{
+    const key=await keyDe(c);
+    if(!(await fbAluno(key))){ui.loginErr='Código não encontrado. Confira com seu personal.';ui.loginBusy=false;return render()}
+    SES={papel:'aluno',alunoId:key,nome:ALU.lista[0].nome};
+  }catch(e){ui.loginErr='Sem conexão. Tente de novo.';ui.loginBusy=false;return render()}
+  ui.loginBusy=false; posLogin();
+}
+async function entrarPersonal(email,senha){
+  ui.loginEmail=String(email||'').trim();
+  ui.loginBusy=true;ui.loginErr='';render();
+  try{const r=await fauth.signInWithEmailAndPassword(String(email).trim(),String(senha));fuser=r.user;await fbPersonal();SES={papel:'personal',nome:'Personal'}}
+  catch(e){ui.loginBusy=false;ui.loginErr=/password|credential|user/i.test(e&&e.code||'')?'E-mail ou senha incorretos.':'Não consegui entrar. Tente de novo.';return render()}
+  ui.loginBusy=false; posLogin();
+}
+function posLogin(){
+  FOTOS=null; lsSet('sessao',SES);
+  ui={...ui,tab:SES.papel==='personal'?'painel':'treinos',view:null,loginErr:'',faseVer:null,alunoSel:null,loginP:false};
+  window.scrollTo(0,0);
+  toast(SES.papel==='personal'?'Modo personal':'Bora treinar, '+SES.nome.split(' ')[0]+'!');
+  carregaSessao();
+}
+
 /* ============ MÉTRICAS ============ */
 function metricas(id){
   const p=PROG[id]||progVazio(), h=HIST[id]||histVazio();
@@ -749,6 +880,20 @@ function metricas(id){
 
 /* ============ LOGIN ============ */
 function vLogin(){
+  if(FB) return `<main class="login"><div class="login-in">
+    <div class="stripe"></div><div class="logo">${LOGO}carga</div>
+    ${ui.loginP?`<h1>Área do<br>personal</h1><p>Entre com seu e-mail e senha.</p>
+    <form id="fLoginP"><label>E-mail</label><input class="inp" name="email" type="email" autocomplete="username" required value="${esc(ui.loginEmail||'')}">
+      <label>Senha</label><input class="inp" name="senha" type="password" autocomplete="current-password" required>
+      <div class="err">${esc(ui.loginErr)}</div>
+      <button class="btn y full" style="margin-top:6px" ${ready&&!ui.loginBusy?'':'disabled'}>${!ready?'Conectando…':ui.loginBusy?'Entrando…':'Entrar'}</button></form>
+    <button class="hint link" style="display:block;margin:22px auto 0" data-a="loginAluno">Sou aluno</button>`
+    :`<h1>Entre pra ver<br>seu treino</h1><p>Use o código que seu personal te passou.</p>
+    <form id="fLogin" autocomplete="off"><label>Código de acesso</label><input class="inp" name="codigo" placeholder="XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" required style="letter-spacing:.08em;font-weight:700">
+      <div class="err">${esc(ui.loginErr)}</div>
+      <button class="btn y full" style="margin-top:6px" ${ready&&!ui.loginBusy?'':'disabled'}>${!ready?'Conectando…':ui.loginBusy?'Entrando…':'Entrar'}</button></form>
+    <button class="hint link" style="display:block;margin:22px auto 0" data-a="loginPersonal">Sou personal</button>`}
+  </div></main>`;
   return `<main class="login"><div class="login-in">
     <div class="stripe"></div>
     <div class="logo">${LOGO}carga</div>
@@ -770,7 +915,7 @@ function entrar(nome,codigo){
   if(c===norm(ALU.personal.codigo)) ses={papel:'personal',nome:String(nome||'').trim()||'Personal'};
   else { const a=ALU.lista.find(a=>norm(a.codigo)===c); if(a) ses={papel:'aluno',alunoId:a.id,nome:String(nome||'').trim()||a.nome}; }
   if(!ses){ui.loginErr='Código não encontrado. Confira com seu personal.';return render()}
-  SES=ses; lsSet('sessao',SES); lsSet('ultimoNome',String(nome||'').trim());
+  SES=ses; FOTOS=null; lsSet('sessao',SES); lsSet('ultimoNome',String(nome||'').trim());
   ui={...ui,tab:ses.papel==='personal'?'painel':'treinos',view:null,loginErr:'',faseVer:null,alunoSel:null};
   window.scrollTo(0,0);
   toast(ses.papel==='personal'?'Modo personal':'Bora treinar, '+ses.nome.split(' ')[0]+'!');
@@ -783,13 +928,13 @@ function vHeader(){
     <div class="logo">${LOGO}carga</div>
     ${isP()?'<span class="who p">Personal</span>':(()=>{const a=alunoById(SES.alunoId);return a?`<button data-a="tab" data-t="perfil" aria-label="Perfil">${avHtml(a,'hav')}</button>`:''})()}
     <div id="sync" class="sync ${sync}"><b></b><span>${syncTxt()}</span></div>
-    ${isP()?`<button class="ib" data-a="acesso" aria-label="Seu código">${P(IC.key,18)}</button>`:''}
+    ${isP()&&!FB?`<button class="ib" data-a="acesso" aria-label="Seu código">${P(IC.key,18)}</button>`:''}
     <button class="ib" data-a="sair" aria-label="Sair">${P(IC.out,18)}</button>
   </div></header>`;
 }
 function vNav(){
   const it=isP()?[['painel','Painel','grid'],['treinos','Treinos','dumb'],['semana','Semana','cal'],['historico','Histórico','clock'],['biblioteca','Exercícios','book']]
-               :[['treinos','Treinos','dumb'],['semana','Semana','cal'],['historico','Histórico','clock'],['perfil','Perfil','user']];
+               :[['treinos','Treinos','dumb'],['semana','Semana','cal'],['historico','Histórico','clock'],['evolucao','Evolução','img'],['perfil','Perfil','user']];
   return `<nav class="nav"><div class="nav-in" style="grid-template-columns:repeat(${it.length},1fr)">${it.map(([k,l,i])=>`<button class="${ui.tab===k?'on':''}" data-a="tab" data-t="${k}">${P(IC[i],22)}${l}</button>`).join('')}</div></nav>`;
 }
 const fotoDe = id=>(PERF[id]&&PERF[id].foto)||'';
@@ -900,6 +1045,84 @@ function vCapaHoje(a,t,d){
   else corpo=`<small>${DIAS_L[d]} · ${nome}</small><h2>Dia de descanso</h2><p>Nada marcado pra hoje. Se quiser, escolha um treino abaixo.</p>`;
   return `<div class="capa hoje">${img}<div class="sh"></div><div class="tx">${corpo}</div></div>`;
 }
+
+/* ============ FOTOS (IndexedDB, só no aparelho) ============ */
+const fdb={db:null,
+  open(){if(this.db)return Promise.resolve(this.db);return new Promise((res,rej)=>{try{const r=indexedDB.open('carga-fotos',1);r.onupgradeneeded=()=>r.result.createObjectStore('fotos',{keyPath:'id'});r.onsuccess=()=>{this.db=r.result;res(r.result)};r.onerror=()=>rej(r.error)}catch(e){rej(e)}})},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('fotos',mode),st=t.objectStore('fotos');const r=fn(st);t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})},
+  all(){return this.tx('readonly',st=>st.getAll())},put(o){return this.tx('readwrite',st=>st.put(o))},del(id){return this.tx('readwrite',st=>st.delete(id))}
+};
+let FOTOS=null;
+const POSES=['Frente','Lado','Costas'];
+async function carregaFotos(){try{const t=await fdb.all();FOTOS=(t||[]).filter(f=>f.alunoId===SES.alunoId).sort((a,b)=>a.data-b.data)}catch(e){FOTOS=[];toast('Seu navegador não deixou salvar fotos')}render()}
+function comprimir(file,max=1000,q=.8){return new Promise((res,rej)=>{const rd=new FileReader();rd.onload=()=>{const img=new Image();img.onload=()=>{const k=Math.min(1,max/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',q))};img.onerror=rej;img.src=rd.result};rd.onerror=rej;rd.readAsDataURL(file)})}
+const dataCurta=ts=>new Date(ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'short'}).replace('.','');
+function vEvolucao(){
+  if(FOTOS===null){carregaFotos();return `<main class="wrap"><div class="loading">Carregando fotos…</div></main>`}
+  const pose=ui.pose||'Frente', fs=FOTOS.filter(f=>f.pose===pose);
+  let cmp='';
+  if(fs.length>=2){
+    const A1=fs.find(f=>f.id===ui.cmpA)||fs[0], B1=fs.find(f=>f.id===ui.cmpB)||fs[fs.length-1];
+    const pos=ui.cmpPos??50;
+    const opt=sel=>fs.map(f=>`<option value="${f.id}" ${f.id===sel.id?'selected':''}>${fmtData(f.data)}</option>`).join('');
+    cmp=`<div class="cmp" id="cmp"><img src="${A1.img}" alt="Antes"><img id="cmpB" src="${B1.img}" alt="Agora" style="clip-path:inset(0 0 0 ${pos}%)">
+      <div class="div" id="cmpDiv" style="left:${pos}%"></div><span class="lado a">${dataCurta(A1.data)}</span><span class="lado b">${dataCurta(B1.data)}</span>
+      <input type="range" min="0" max="100" value="${pos}" data-f="cmp" aria-label="Arraste pra comparar"></div>
+      <div class="sel2"><label><span class="fl">Antes</span><select class="inp" data-f="cmpA">${opt(A1)}</select></label><label><span class="fl">Depois</span><select class="inp" data-f="cmpB">${opt(B1)}</select></label></div>`;
+  } else if(fs.length===1){
+    cmp=`<div class="card empty" style="margin-top:12px">Falta só mais uma foto de ${pose.toLowerCase()} pra comparar o antes e depois.</div>`;
+  } else cmp=`<div class="card empty" style="margin-top:12px">Nenhuma foto de ${pose.toLowerCase()} ainda.<br>Tire a primeira pra ter seu ponto de partida.</div>`;
+  return `<main class="wrap" style="padding-bottom:110px">
+    <div class="ph" style="display:flex;align-items:flex-end;gap:12px"><div style="flex:1"><h1>Evolução</h1><p>Suas fotos ficam só neste celular.</p></div>
+      <button class="btn y sm" data-a="novaFoto">${P(IC.plus,16)} Foto</button></div>
+    <div class="opts poses">${POSES.map(p=>`<button class="opt ${p===pose?'on':''}" data-a="verPose" data-v="${p}">${p} <span style="opacity:.6">${FOTOS.filter(f=>f.pose===p).length}</span></button>`).join('')}</div>
+    ${cmp}
+    ${fs.length?`<div class="lbl">Todas de ${pose.toLowerCase()}</div><div class="thumbs">${[...fs].reverse().map(f=>`<button data-a="verFoto" data-id="${f.id}"><img src="${f.img}" alt=""><span>${dataCurta(f.data)}</span></button>`).join('')}</div>`:''}
+    <div class="fnote" style="margin-top:16px"><b>Dica:</b> mesmo lugar, mesma luz e mesmo horário. Assim a comparação mostra a mudança de verdade.</div>
+  </main>`;
+}
+
+/* ============ STORY DO CHECK-IN ============ */
+function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function logoCanvas(ctx,x,y,s){ctx.fillStyle='#2F5645';rr(ctx,x,y+s*.446,s,s*.108,s*.054);ctx.fill();ctx.beginPath();ctx.arc(x+s/2,y+s/2,s*.346,0,7);ctx.fill();ctx.fillStyle='#F5F2EC';ctx.beginPath();ctx.arc(x+s/2,y+s/2,s*.092,0,7);ctx.fill()}
+async function gerarStory(sess,foto){
+  try{await Promise.all([document.fonts.load('700 80px Urbanist'),document.fonts.load('500 40px Urbanist')])}catch(e){}
+  const W=1080,Hh=1920,c=document.createElement('canvas');c.width=W;c.height=Hh;const x=c.getContext('2d');
+  const F=(w,px)=>`${w} ${px}px Urbanist, -apple-system, "Segoe UI", Roboto, sans-serif`;
+  x.fillStyle='#F5F2EC';x.fillRect(0,0,W,Hh);
+  const px=56,py=56,pw=W-112,ph=1290;
+  x.save();rr(x,px,py,pw,ph,44);x.clip();
+  if(foto){const im=await new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=foto});const k=Math.max(pw/im.width,ph/im.height),w=im.width*k,h=im.height*k;x.drawImage(im,px+(pw-w)/2,py+(ph-h)/2,w,h);
+    const g=x.createLinearGradient(0,py+ph*.6,0,py+ph);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.45)');x.fillStyle=g;x.fillRect(px,py,pw,ph)}
+  else{x.fillStyle='#2F5645';x.fillRect(px,py,pw,ph);x.strokeStyle='rgba(255,255,255,.05)';x.lineWidth=40;for(let i=-ph;i<pw+ph;i+=110){x.beginPath();x.moveTo(px+i,py);x.lineTo(px+i-ph*.7,py+ph);x.stroke()}
+    x.fillStyle='rgba(255,255,255,.10)';x.font=F(800,620);x.textAlign='center';x.textBaseline='middle';x.fillText(sess.letra||'C',px+pw/2,py+ph/2+20)}
+  x.restore();
+  // selo no topo da foto
+  x.font=F(700,34);const selo='TREINO CONCLUÍDO';const sw=x.measureText(selo).width+64;x.fillStyle='rgba(245,242,236,.94)';rr(x,px+36,py+36,sw,72,36);x.fill();
+  x.fillStyle='#2F5645';x.textAlign='left';x.textBaseline='middle';x.fillText(selo,px+68,py+73);
+  if(sess.prs&&sess.prs.length){x.font=F(700,36);const t='🔥 Recorde: '+sess.prs[0].nome+' '+sess.prs[0].c+' kg';const tw=Math.min(pw-72,x.measureText(t).width+60);x.fillStyle='#2F5645';rr(x,px+36,py+ph-112,tw,76,38);x.fill();x.fillStyle='#F7F4EE';x.fillText(t,px+66,py+ph-73,tw-60)}
+  // painel de baixo
+  const by=py+ph+70;
+  logoCanvas(x,px,by,56);x.fillStyle='#1B1E1C';x.font=F(700,50);x.textBaseline='middle';x.textAlign='left';x.fillText('carga',px+74,by+26);
+  x.font=F(600,34);x.fillStyle='#6B6860';x.textAlign='right';x.fillText(new Date(sess.data).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'}),W-px,by+28);
+  x.textAlign='left';x.fillStyle='#1B1E1C';x.font=F(700,84);let nome=sess.nome||'Treino';while(x.measureText(nome).width>pw&&nome.length>4)nome=nome.slice(0,-2);if(nome!==sess.nome)nome=nome.trim()+'…';
+  x.fillText(nome,px,by+150);
+  const nS=sess.itens.reduce((a,i)=>a+i.series.length,0),vol=sess.itens.reduce((a,i)=>a+i.series.reduce((b,s)=>b+num(s.carga)*num(s.reps),0),0);
+  const st=[[String(nS),'séries'],[fmtDur(sess.dur),'de treino'],[vol?Math.round(vol).toLocaleString('pt-BR'):String(sess.itens.length),vol?'kg levantados':'exercícios']];
+  st.forEach(([v,l],i)=>{const cx=px+i*(pw/3);x.fillStyle='#2F5645';x.font=F(700,64);x.fillText(v,cx,by+260);x.fillStyle='#6B6860';x.font=F(600,32);x.fillText(l,cx,by+318)});
+  return new Promise(r=>c.toBlob(b=>r(b),'image/jpeg',.9));
+}
+async function compartilharStory(){
+  const b=ui.modal&&ui.modal.blob;if(!b)return;
+  const f=new File([b],'carga-checkin.jpg',{type:'image/jpeg'});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==='AbortError')return}
+  toast('Toque e segure a imagem pra salvar');
+}
+
+/* ============ MENSAGEM DE ACESSO ============ */
+const linkApp=()=>{try{return location.href.split('#')[0].split('?')[0]}catch(e){return ''}};
+function msgAcesso(a){const n=String(a.nome||'').split(' ')[0];return `Oi, ${n}! 👋\n\nSeu acesso ao Carga, o app dos seus treinos, tá pronto:\n\n👉 ${linkApp()}\nCódigo: *${a.codigo}*\n\nÉ só abrir o link, digitar o código e tocar em Entrar. Dica: no navegador, use "Adicionar à Tela de Início" pra abrir como app.\n\nQualquer dúvida, me chama! 💪`}
+const waLink=a=>{const d=String(a.whats||'').replace(/\D/g,'');const num=d?(d.length<=11?'55'+d:d):'';return 'https://wa.me/'+num+'?text='+encodeURIComponent(msgAcesso(a))};
 function vPainel(){
   const ms=ALU.lista.map(a=>({a,m:metricas(a.id)}));
   const totSem=ms.reduce((s,x)=>s+x.m.feitosSemana,0);
@@ -1037,7 +1260,7 @@ function vHistorico(){
         <div class="info"><b>${esc(s.nome)}</b><small>${fmtData(s.data)} · ${fmtDur(s.dur)} · ${nS} série${nS===1?'':'s'}${vol?` · ${Math.round(vol).toLocaleString('pt-BR')} kg`:''}</small></div>
         <span class="chev">${P(IC.chev,20)}</span></button>
         ${op?`<div class="hs-d">${s.itens.map(i=>`<div class="hs-ex"><b>${esc(i.nome)}</b><div>${i.series.map(x=>`${x.carga?esc(x.carga)+' kg':'sem carga'} × ${esc(x.reps||'–')}`).join('  ·  ')}</div></div>`).join('')}
-        ${isP()?`<button class="link" style="color:var(--red)" data-a="delSessao" data-id="${s.id}">Excluir sessão</button>`:''}</div>`:''}
+        ${isP()?`<button class="link" style="color:var(--red)" data-a="delSessao" data-id="${s.id}">Excluir sessão</button>`:`<button class="link" data-a="checkin" data-id="${s.id}">${P(IC.share,14)} Gerar check-in pro stories</button>`}</div>`:''}
       </div>`}).join('')}</div>`:`<div class="card empty">Nenhum treino concluído ainda.${isP()?'':'<br>Comece um treino e finalize pra ele aparecer aqui.'}</div>`}
   </main>`;
 }
@@ -1065,6 +1288,7 @@ function vAluno(){
       <div class="tl">
         <button class="card selbar" style="margin:0" data-a="tab" data-t="treinos"><div class="gi">${P(IC.dumb,20)}</div><div class="info"><b>Treinos e fases</b><small>${m.p.treinos.length} treinos cadastrados</small></div>${P(IC.right,18)}</button>
         <button class="card selbar" style="margin:0" data-a="tab" data-t="semana"><div class="gi">${P(IC.cal,20)}</div><div class="info"><b>Semana</b><small>Dias de cada treino</small></div>${P(IC.right,18)}</button>
+        <button class="card selbar" style="margin:0" data-a="enviarAcesso"><div class="gi">${P(IC.share,20)}</div><div class="info"><b>Enviar acesso</b><small>Link e código pelo WhatsApp</small></div>${P(IC.right,18)}</button>
         <button class="card selbar" style="margin:0" data-a="tab" data-t="historico"><div class="gi">${P(IC.clock,20)}</div><div class="info"><b>Histórico</b><small>${m.ult?'Último treino '+quando(m.ult.data):'Ainda sem treinos'}</small></div>${P(IC.right,18)}</button>
       </div>
     </main>`;
@@ -1165,6 +1389,7 @@ function vPicker(){
   </div></div>`;
 }
 function sugereCodigo(nome){
+  if(FB) return gerarCodigo();
   const base=norm(nome).replace(/[^a-z]/g,'').slice(0,6).toUpperCase()||'ALUNO';
   for(let i=0;i<50;i++){const c=base+String(Math.floor(1000+Math.random()*9000));if(codigoLivre(c))return c}
   return base+uid().slice(0,4).toUpperCase();
@@ -1185,7 +1410,8 @@ function vModal(){
     return `<div class="ov c" data-a="fecharModal" data-self="1"><form class="dlg" id="fAluno" data-id="${a?a.id:''}">
     <h3>${a?'Editar aluno':'Novo aluno'}</h3><p>${a?'Atualize os dados de acesso e as fases do programa.':'Ele entra no app com este código.'}</p>
     <label>Nome</label><input class="inp" name="nome" required placeholder="Nome do aluno" value="${esc(a?a.nome:'')}" ${a?'':'data-f="nomeNovo"'}>
-    <label>Código de acesso</label><input class="inp" name="codigo" id="codNovo" required value="${esc(a?a.codigo:m.cod||'')}" autocapitalize="characters">
+    <label>WhatsApp (opcional)</label><input class="inp" name="whats" inputmode="tel" placeholder="(13) 99999-9999" value="${esc(a&&a.whats||'')}">
+    <label>Código de acesso</label><input class="inp" name="codigo" id="codNovo" required ${FB&&a?'readonly style="opacity:.7"':''} value="${esc(a?a.codigo:m.cod||(FB?gerarCodigo():''))}" autocapitalize="characters">
     ${a?'':`<button type="button" class="gen" data-a="gerarCod">Gerar outro código</button>`}
     ${a?[1,2].map(n=>{const f=faseInfo(n,p);return `<div class="sub">Fase ${n}</div>
       <div style="display:flex;gap:8px;margin-top:8px"><input class="inp" name="fn${n}" placeholder="Nome" value="${esc(f.nome)}"><input class="inp" name="fs${n}" placeholder="Semanas…" value="${esc(f.sub)}"></div>
@@ -1219,6 +1445,36 @@ function vModal(){
     <label><span class="fl">Data</span><input class="inp" type="date" name="data" value="${v}" required></label></div>
     <div class="row" style="margin-top:20px"><button type="button" class="btn dark" data-a="fecharModal">Cancelar</button><button class="btn y">Salvar</button></div>
   </form></div>`}
+  if(m.tipo==='foto') return `<div class="ov c" data-a="fecharModal" data-self="1"><form class="dlg" id="fFoto">
+    <h3>Nova foto</h3><p>Mesmo lugar, mesma luz e mesmo horário ajudam na comparação.</p>
+    <span class="fl">Pose</span><div class="opts">${POSES.map(p=>`<button type="button" class="opt ${(m.pose||ui.pose||'Frente')===p?'on':''}" data-a="fotoPose" data-v="${p}">${p}</button>`).join('')}</div>
+    <label style="display:block;margin-top:14px"><span class="fl">Data</span><input class="inp" type="date" name="data" value="${new Date().toISOString().slice(0,10)}" required></label>
+    <input type="file" id="fotoEvo" accept="image/*" hidden>
+    <div class="row" style="margin-top:20px"><button type="button" class="btn dark" data-a="fecharModal">Cancelar</button><button type="button" class="btn y" data-a="escolherFoto">${P(IC.cam,16)} Escolher</button></div>
+  </form></div>`;
+  if(m.tipo==='verFoto'){const f=(FOTOS||[]).find(x=>x.id===m.id);if(!f)return '';return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg">
+    <img src="${f.img}" alt="" style="width:100%;border-radius:12px;display:block;margin-bottom:12px"><p style="margin-bottom:14px">${esc(f.pose)} · ${fmtData(f.data)}</p>
+    <div class="row"><button class="btn dark" data-a="fecharModal">Fechar</button><button class="btn red" data-a="delFoto" data-id="${f.id}">Apagar</button></div></div></div>`}
+  if(m.tipo==='checkin'){
+    if(m.gerando) return `<div class="ov c"><div class="dlg"><h3>Montando seu story…</h3><p>Só um segundo.</p></div></div>`;
+    if(m.url) return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg">
+      <h3>Seu check-in</h3><img class="story" src="${m.url}" alt="Story do treino">
+      <div class="col"><button class="btn y full" data-a="shareStory">${P(IC.share,16)} Compartilhar no stories</button>
+      <button class="btn dark full" data-a="fecharModal">Fechar</button></div>
+      <p style="font-size:12px;margin:10px 0 0;text-align:center">Se o compartilhar não abrir, toque e segure a imagem pra salvar.</p></div></div>`;
+    return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg">
+      <h3>Check-in do treino</h3><p>Tire uma foto pra registrar o dia. O app monta um story com a moldura do Carga e os números do treino.</p>
+      <input type="file" id="fotoCheck" accept="image/*" capture="user" hidden>
+      <div class="col"><button class="btn y full" data-a="checkFoto">${P(IC.cam,16)} Tirar foto</button>
+      <button class="btn dark full" data-a="checkSemFoto">Gerar sem foto</button>
+      <button class="link" style="color:var(--mut)" data-a="fecharModal">Agora não</button></div></div></div>`;
+  }
+  if(m.tipo==='msgAluno'){const a=alunoById(m.id);if(!a)return '';return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg">
+    <h3>${m.novo?'Aluno cadastrado':'Enviar acesso'}</h3><p>${m.novo?'Mande o acesso pra '+esc(a.nome.split(' ')[0])+' agora mesmo:':'Mensagem pronta com o link e o código:'}</p>
+    <div class="msgbox">${esc(msgAcesso(a))}</div>
+    <div class="col"><a class="btn wa full" href="${esc(waLink(a))}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
+    <button class="btn dark full" data-a="copiarMsg" data-id="${a.id}">${P(IC.copy,16)} Copiar mensagem</button>
+    <button class="link" style="color:var(--mut)" data-a="fecharModal">Fechar</button></div></div></div>`}
   if(m.tipo==='fim'){const r=m.r;return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg"><h3>Finalizar treino?</h3>
     <div class="sumg"><div><b>${r.feitas}/${r.tot}</b><small>Séries</small></div><div><b>${r.vol?Math.round(r.vol).toLocaleString('pt-BR'):'–'}</b><small>Kg levantados</small></div><div><b>${esc(r.dur)}</b><small>Tempo</small></div></div>
     ${r.faltam?`<div class="warn">Faltaram ${r.faltam} série${r.faltam>1?'s':''}${r.exFalt?` em ${r.exFalt} exercício${r.exFalt>1?'s':''}`:''}. Dá pra voltar e terminar, ou salvar assim mesmo.</div>`:''}
@@ -1238,8 +1494,8 @@ function render(){
   else if(ui.view==='treino') h=vTreino();
   else {
     if(!isP()&&(ui.tab==='biblioteca'||ui.tab==='painel')) ui.tab='treinos';
-    if(isP()&&ui.tab==='perfil') ui.tab='painel';
-    h=vHeader()+({painel:vPainel,treinos:vTreinos,semana:vSemana,biblioteca:vBiblioteca,historico:vHistorico,perfil:vPerfil}[ui.tab])()+vNav();
+    if(isP()&&(ui.tab==='perfil'||ui.tab==='evolucao')) ui.tab='painel';
+    h=vHeader()+({painel:vPainel,treinos:vTreinos,semana:vSemana,biblioteca:vBiblioteca,historico:vHistorico,perfil:vPerfil,evolucao:vEvolucao}[ui.tab])()+vNav();
   }
   if(h===undefined) return;
   $('#app').innerHTML=h;
@@ -1247,6 +1503,12 @@ function render(){
 }
 function renderOv(){$('#ov').innerHTML=(ui.picker?vPicker():'')+(ui.modal?vModal():'')}
 function confirmar(o,fn){ui.modal=o;modalFn=fn;renderOv()}
+async function montaStory(foto){
+  const m=ui.modal;if(!m)return;const sess=H.sessoes.find(s=>s.id===m.sid);if(!sess){ui.modal=null;renderOv();return}
+  m.gerando=true;renderOv();
+  try{const b=await gerarStory(sess,foto);if(m.url)URL.revokeObjectURL(m.url);m.blob=b;m.url=URL.createObjectURL(b)}catch(e){toast('Não consegui montar a imagem')}
+  m.gerando=false;if(ui.modal===m)renderOv();
+}
 function celebrar(sub){const el=document.createElement('div');el.className='cel';el.innerHTML=`<div class="st2 a"></div><div class="st2 b"></div><div><b>Treino<br>concluído</b><small>${esc(sub)}</small></div>`;document.body.appendChild(el);setTimeout(()=>el.remove(),2200)}
 function toast(t){const el=$('#toast');el.innerHTML=`<div class="toast">${esc(t)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>el.innerHTML='',2200)}
 
@@ -1267,7 +1529,7 @@ function iniciar(id){
 }
 const acts = {
   tab:d=>{ui.tab=d.t;ui.view=null;window.scrollTo(0,0);render()},
-  sair:()=>confirmar({titulo:'Sair?',texto:'Você volta pra tela de entrada. Os treinos continuam salvos.',ok:'Sair'},()=>{SES=null;lsSet('sessao',null);ui.view=null;ui.tab='treinos';ui.alunoSel=null;render()}),
+  sair:()=>confirmar({titulo:'Sair?',texto:'Você volta pra tela de entrada. Os treinos continuam salvos.',ok:'Sair'},()=>{if(FB&&fauth&&isP())fauth.signOut().catch(()=>{});SES=null;FOTOS=null;lsSet('sessao',null);ui.view=null;ui.tab='treinos';ui.alunoSel=null;render()}),
   acesso:()=>{ui.modal={tipo:'acesso'};renderOv()},
   novoAluno:()=>{ui.modal={tipo:'aluno',cod:''};renderOv();setTimeout(()=>{const i=document.querySelector('#fAluno [name=nome]');i&&i.focus()},50)},
   gerarCod:()=>{const f=$('#fAluno');if(!f)return;$('#codNovo').value=sugereCodigo(f.nome.value)},
@@ -1329,6 +1591,20 @@ const acts = {
   novoPeso:()=>{ui.modal={tipo:'peso'};renderOv();setTimeout(()=>{const i=document.querySelector('#fPeso [name=kg]');i&&i.focus()},50)},
   delPeso:d=>confirmar({titulo:'Apagar registro?',texto:'Esse registro de peso sai da sua evolução.',ok:'Apagar',perigo:true},()=>{const id=SES.alunoId;PERF[id].pesos.splice(+d.i,1);persist('perfil:'+id);render()}),
   kgStep:d=>{const it=A.itens[+d.i],s=it.series[+d.s];const base=num(String(s.carga||'').trim()?s.carga:(s.sc||0));const v=Math.max(0,Math.round((base+(+d.v))*10)/10);s.carga=String(v).replace('.',',');lsSet('ativa',A);render()},
+  verPose:d=>{ui.pose=d.v;ui.cmpA=ui.cmpB=null;ui.cmpPos=50;render()},
+  novaFoto:()=>{ui.modal={tipo:'foto',pose:ui.pose||'Frente'};renderOv()},
+  fotoPose:d=>{ui.modal.pose=d.v;renderOv()},
+  escolherFoto:()=>{const i=$('#fotoEvo');i&&i.click()},
+  verFoto:d=>{ui.modal={tipo:'verFoto',id:d.id};renderOv()},
+  delFoto:d=>{const id=d.id;ui.modal=null;confirmar({titulo:'Apagar foto?',texto:'Ela sai do seu celular e não dá pra recuperar.',ok:'Apagar',perigo:true},async()=>{try{await fdb.del(id)}catch(e){}FOTOS=FOTOS.filter(f=>f.id!==id);ui.cmpA=ui.cmpB=null;render()})},
+  checkin:d=>{ui.modal={tipo:'checkin',sid:d.id};renderOv()},
+  checkFoto:()=>{const i=$('#fotoCheck');i&&i.click()},
+  checkSemFoto:()=>montaStory(null),
+  shareStory:()=>compartilharStory(),
+  enviarAcesso:()=>{ui.modal={tipo:'msgAluno',id:ui.alunoSel};renderOv()},
+  copiarMsg:d=>{const a=alunoById(d.id);try{navigator.clipboard.writeText(msgAcesso(a)).then(()=>toast('Mensagem copiada'),()=>toast('Não deu pra copiar. Selecione o texto e copie.'))}catch(e){toast('Não deu pra copiar. Selecione o texto e copie.')}},
+  loginPersonal:()=>{ui.loginP=true;ui.loginErr='';render()},
+  loginAluno:()=>{ui.loginP=false;ui.loginErr='';render()},
   wxToggle:d=>{const i=+d.i;if(i===atualIdx())return;ui.wxOpen=ui.wxOpen||[];ui.wxOpen=ui.wxOpen.includes(i)?ui.wxOpen.filter(x=>x!==i):[...ui.wxOpen,i];render()},
   addSerie:d=>{const it=A.itens[+d.i],u=it.series[it.series.length-1]||{carga:'',reps:''};it.series.push({carga:u.carga,reps:u.reps,feito:false});lsSet('ativa',A);render()},
   remSerie:d=>{A.itens[+d.i].series.pop();lsSet('ativa',A);render()},
@@ -1347,8 +1623,9 @@ const acts = {
       const s={id:uid(),treinoId:A.treinoId,letra:A.letra,nome:A.nome,data:A.inicio,dur:Math.round((Date.now()-A.inicio)/1000),
         itens:A.itens.map(it=>({exId:it.exId,nome:exById(it.exId).nome,series:it.series.filter(x=>x.feito).map(x=>({carga:x.carga,reps:x.reps}))})).filter(i=>i.series.length)};
       s.itens.forEach(i=>{const c=[...i.series].reverse().find(x=>String(x.carga).trim());if(c)H.ultimas[i.exId]=String(c.carga).trim()});
-      H.sessoes.unshift(s); H.sessoes=H.sessoes.slice(0,150); persistH();
+      s.prs=prs; H.sessoes.unshift(s); H.sessoes=H.sessoes.slice(0,150); persistH();
       A=null;lsSet('ativa',null);ui.rest=null;ui.view=null;ui.tab='historico';ui.open=s.id;window.scrollTo(0,0);render();celebrar(prs.length?prs.length+' recorde'+(prs.length>1?'s':'')+' batido'+(prs.length>1?'s':'')+' 🔥':'Mandou bem! 💪');
+      setTimeout(()=>{ui.modal={tipo:'checkin',sid:s.id};renderOv()},2300);
     };
     renderOv();
   },
@@ -1373,6 +1650,8 @@ document.addEventListener('input',e=>{
   if(f==='busca'){ui.busca=el.value;$('#libList').innerHTML=listaEx(filtraEx(ui.filtro,ui.busca));return}
   if(f==='pbusca'){ui.picker.busca=el.value;$('#pickList').innerHTML=listaEx(filtraEx(ui.picker.filtro,ui.picker.busca),ui.picker.sel);return}
   if(f==='set'){A.itens[+el.dataset.i].series[+el.dataset.s][el.dataset.k]=el.value;lsSet('ativa',A);return}
+  if(f==='cmp'){ui.cmpPos=+el.value;const b=$('#cmpB'),dv=$('#cmpDiv');if(b)b.style.clipPath=`inset(0 0 0 ${el.value}%)`;if(dv)dv.style.left=el.value+'%';return}
+  if(f==='cmpA'||f==='cmpB'){ui[f]=el.value;render();return}
   if(f==='pf'&&!isP()){const id=SES.alunoId;PERF[id][el.dataset.k]=el.value;persist('perfil:'+id);return}
   if(f==='nomeNovo'){const c=$('#codNovo');if(c&&(!c.value||c.dataset.auto==='1')){c.value=el.value.trim()?sugereCodigo(el.value):'';c.dataset.auto='1'}return}
   if(!isP()) return;
@@ -1382,7 +1661,19 @@ document.addEventListener('input',e=>{
   else if(f==='ex'){const x=t.exercicios.find(x=>x.uid===el.dataset.u);if(x)x[el.dataset.k]=el.value}
   tocar(t);
 });
-document.addEventListener('change',e=>{
+document.addEventListener('change',async e=>{
+  if(e.target.id==='fotoEvo'&&e.target.files&&e.target.files[0]){
+    const m=ui.modal, fm=$('#fFoto'), dt=fm?new Date(fm.data.value+'T12:00').getTime():Date.now();
+    try{const img=await comprimir(e.target.files[0],1000,.8);const pf=PERF[SES.alunoId],pa=pf&&pesoAtual(pf);
+      const f={id:uid(),alunoId:SES.alunoId,pose:(m&&m.pose)||'Frente',data:isNaN(dt)?Date.now():dt,img,peso:pa?pa.kg:''};
+      await fdb.put(f);FOTOS.push(f);FOTOS.sort((a,b)=>a.data-b.data);ui.pose=f.pose;ui.cmpA=ui.cmpB=null;ui.modal=null;render();toast('Foto salva')}
+    catch(err){toast('Não consegui salvar essa foto')}
+    return;
+  }
+  if(e.target.id==='fotoCheck'&&e.target.files&&e.target.files[0]){
+    try{const img=await comprimir(e.target.files[0],1400,.88);montaStory(img)}catch(err){toast('Não consegui abrir essa foto')}
+    return;
+  }
   if(e.target.id!=='fotoIn'||!e.target.files||!e.target.files[0]) return;
   const file=e.target.files[0], rd=new FileReader();
   rd.onload=()=>{const img=new Image();img.onload=()=>{
@@ -1392,10 +1683,11 @@ document.addEventListener('change',e=>{
   };img.onerror=()=>toast('Não consegui abrir essa imagem');img.src=rd.result};
   rd.readAsDataURL(file);
 });
-document.addEventListener('submit',e=>{
+document.addEventListener('submit',async e=>{
   e.preventDefault();
   const id=e.target.id, fd=new FormData(e.target);
-  if(id==='fLogin') return entrar(fd.get('nome'),fd.get('codigo'));
+  if(id==='fLogin') return FB?entrarFB(fd.get('codigo')):entrar(fd.get('nome'),fd.get('codigo'));
+  if(id==='fLoginP') return entrarPersonal(fd.get('email'),fd.get('senha'));
   if(id==='fPeso'){
     const kg=num(fd.get('kg')), dt=new Date(String(fd.get('data'))+'T12:00').getTime();
     if(!(kg>20&&kg<400)) return toast('Peso inválido');
@@ -1407,19 +1699,19 @@ document.addEventListener('submit',e=>{
     if(!nome) return toast('Digite o nome');
     if(!codigoLivre(cod,aid)) return toast('Esse código já está em uso');
     if(aid){
-      const a=alunoById(aid); a.nome=nome; a.codigo=cod; persist('alunos');
+      const a=alunoById(aid); a.nome=nome; a.codigo=cod; a.whats=String(fd.get('whats')||'').trim(); persist('alunos');
       const p=PROG[aid]||(PROG[aid]=progVazio());
       [1,2].forEach(n=>{p.fases[String(n)]={nome:String(fd.get('fn'+n)).trim()||'Fase '+n,sub:String(fd.get('fs'+n)).trim(),nota:String(fd.get('fo'+n)).trim()}});
       persist('prog:'+aid); ui.modal=null; render(); toast('Aluno atualizado');
     } else {
-      const nid='a'+uid(), base=String(fd.get('base')||'');
+      const nid=FB?await keyDe(cod):'a'+uid(), base=String(fd.get('base')||'');
       let p=progVazio();
       if(base&&PROG[base]){p=clone(PROG[base]);p.faseAtiva=1;p.treinos.forEach(t=>{t.id=uid();t.atualizadoEm=Date.now();t.exercicios.forEach(x=>{x.uid=uid();x.carga=''})})}
       PROG[nid]=p; HIST[nid]=histVazio();
-      ALU.lista.push({id:nid,nome,codigo:cod,criadoEm:Date.now()});
+      ALU.lista.push({id:nid,nome,codigo:cod,whats:String(fd.get('whats')||'').trim(),criadoEm:Date.now()});
       persist('alunos'); persist('prog:'+nid); persist('hist:'+nid);
       ouvir('hist:'+nid,d=>{HIST[nid]=d;fixaHist(d);if(ui.alunoSel===nid)foco(nid);if(ui.view!=='editor')render()});
-      ui.modal=null; acts.abrirAluno({id:nid}); toast('Cadastro feito · código '+cod);
+      ui.modal=null; acts.abrirAluno({id:nid}); ui.modal={tipo:'msgAluno',id:nid,novo:true}; renderOv();
     }
     return;
   }
