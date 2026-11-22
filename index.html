@@ -712,7 +712,7 @@ function ouvir(k,aplica){
   try{const r=db.doc(caminho(k));if(typeof r.onSnapshot==='function'){cloud.subs[k]=true;r.onSnapshot(snap=>{try{if(cloud.busy[k])return;if(snap&&snap.exists&&snap.data()) aplica(clone(snap.data()))}catch(e){}})}}catch(e){}
 }
 async function initCloud(){
-  if(FB){try{await fbInit()}catch(e){ready=true;cloud.on=false;toast('Sem conexão com o servidor');render()}return}
+  if(FB){try{await fbInit()}catch(e){ready=true;cloud.on=false;if(SES&&SES.papel==='aluno'&&!/^[0-9a-f]{64}$/.test(String(SES.alunoId))){SES=null;lsSet('sessao',null)}toast('Sem conexão com o servidor. Tente de novo.');render()}return}
   const timer=setTimeout(()=>{if(!ready){cloud.on=false;baseLocal()}},10000);
   try{
     if(!window.claude||!window.claude.use) throw 0;
@@ -781,8 +781,14 @@ async function fbInit(){
   fauth=firebase.auth();
   fuser=await new Promise(r=>{const off=fauth.onAuthStateChanged(u=>{off();r(u)})});
   cloud.on=true; setSync('ok');
-  if(SES&&SES.papel==='personal'){ if(fuser) await fbPersonal(); else {SES=null;lsSet('sessao',null)} }
-  else if(SES&&SES.papel==='aluno'){ if(!(await fbAluno(SES.alunoId))){SES=null;lsSet('sessao',null)} }
+  if(SES&&SES.papel==='personal'){
+    let ok=false; if(fuser){try{await fbPersonal();ok=true}catch(e){}}
+    if(!ok){SES=null;lsSet('sessao',null);ui.loginP=true}
+  } else if(SES&&SES.papel==='aluno'){
+    let ok=false;
+    if(/^[0-9a-f]{64}$/.test(String(SES.alunoId))){try{ok=await fbAluno(SES.alunoId)}catch(e){ok=false}}
+    if(!ok){SES=null;lsSet('sessao',null);ui.loginErr='O app foi atualizado. Digite o código novo que seu personal te mandou.'}
+  }
   ready=true; await carregaSessao();
 }
 async function fbPersonal(){
