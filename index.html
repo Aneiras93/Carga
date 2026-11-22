@@ -433,6 +433,26 @@ html.ios-tab main{padding-bottom:170px!important}
 .btn.wa{background:#1F7A4D;color:#fff}
 .col{display:flex;flex-direction:column;gap:8px}
 
+
+/* ===== tour ===== */
+#tour{position:fixed;inset:0;z-index:95}
+#tour .tv{position:fixed;inset:0;background:rgba(27,30,28,.62)}
+#tour .hole{position:fixed;border-radius:16px;box-shadow:0 0 0 9999px rgba(27,30,28,.62),0 0 0 3px var(--ytx),0 0 0 6px var(--y);transition:all .25s ease;pointer-events:none}
+#tour .tb{position:fixed;left:16px;right:16px;max-width:420px;margin:0 auto;background:var(--s1);border-radius:18px;padding:18px 18px 14px;box-shadow:0 12px 40px rgba(0,0,0,.25);transition:top .25s ease,bottom .25s ease}
+#tour .tb small{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--y);margin-bottom:6px}
+#tour .tb h3{font-family:var(--fc);font-weight:700;font-size:24px;line-height:1.1;margin-bottom:6px}
+#tour .tb p{color:var(--mut);font-size:15px;line-height:1.45}
+#tour .tf{display:flex;align-items:center;gap:8px;margin-top:16px}
+#tour .dots{display:flex;gap:5px;flex:1}
+#tour .dots i{width:7px;height:7px;border-radius:50%;background:var(--s3)}
+#tour .dots i.on{background:var(--y);width:18px;border-radius:4px}
+#tour .mock{background:var(--bg);border-radius:12px;padding:10px;margin-top:12px;display:grid;grid-template-columns:24px 1.6fr 1fr 46px;gap:6px;align-items:center}
+#tour .mock span{height:38px;border-radius:9px;background:var(--s1);display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-weight:700;font-size:15px}
+#tour .mock .n{background:var(--s2);height:24px;justify-content:center;padding:0;font-size:12px;color:var(--mut)}
+#tour .mock .ck{background:var(--y);color:var(--ytx);justify-content:center}
+#tour .mock .k b{color:var(--mut);font-weight:700}
+#tour ol{margin:10px 0 0 18px;color:var(--tx);font-size:15px;line-height:1.5}
+
 /* capa */
 .capa{position:relative;height:200px;border-radius:18px;overflow:hidden;margin-top:16px;background:#2F5645 repeating-linear-gradient(-55deg,rgba(255,255,255,.03) 0 18px,transparent 18px 36px)}
 .capa img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 8%}
@@ -751,7 +771,7 @@ async function carregaSessao(){
     }
   }catch(e){ toast('Erro ao carregar os dados') }
   carregando=false;
-  if(SES.papel==='aluno') foco(SES.alunoId);
+  if(SES.papel==='aluno'){ foco(SES.alunoId); talvezTour(); }
   else { if(!alunoById(ui.alunoSel)) ui.alunoSel=null; foco(ui.alunoSel); if(!ui.alunoSel) ui.tab='painel'; }
   render();
 }
@@ -996,6 +1016,7 @@ function vPerfil(){
     <div class="lbl">Dores, lesões ou limitações</div>
     <textarea class="ta" data-f="pf" data-k="limitacoes" placeholder="Ex.: dor no joelho direito ao agachar fundo">${esc(pf.limitacoes)}</textarea>
     <p style="font-size:12px;color:var(--dim);margin-top:8px">Tudo aqui é salvo automaticamente e ajuda seu personal a ajustar o treino.</p>
+    <button class="btn ghost full" style="margin-top:18px" data-a="verTour">Ver o tour do app de novo</button>
   </main>`;
 }
 function vPerfilResumo(id){
@@ -1129,6 +1150,49 @@ async function compartilharStory(){
 const linkApp=()=>{try{return location.href.split('#')[0].split('?')[0]}catch(e){return ''}};
 function msgAcesso(a){const n=String(a.nome||'').split(' ')[0];return `Oi, ${n}! 👋\n\nSeu acesso ao Carga, o app dos seus treinos, tá pronto:\n\n👉 ${linkApp()}\nCódigo: *${a.codigo}*\n\nÉ só abrir o link, digitar o código e tocar em Entrar. Dica: no navegador, use "Adicionar à Tela de Início" pra abrir como app.\n\nQualquer dúvida, me chama! 💪`}
 const waLink=a=>{const d=String(a.whats||'').replace(/\D/g,'');const num=d?(d.length<=11?'55'+d:d):'';return 'https://wa.me/'+num+'?text='+encodeURIComponent(msgAcesso(a))};
+
+/* ============ TOUR DO PRIMEIRO ACESSO ============ */
+const instalado=()=>{try{return navigator.standalone||matchMedia('(display-mode: standalone)').matches}catch(e){return false}};
+function passosTour(){
+  const a=alunoById(SES.alunoId)||{nome:''}, n=esc(String(a.nome||'').split(' ')[0]), f=faseInfo(S.faseAtiva||1);
+  const ios=document.documentElement.classList.contains('ios-tab')||/iP(hone|ad|od)/.test(navigator.userAgent);
+  const p=[
+    {t:'Bem-vinda', h:`Oi, ${n}!`, p:`Esse é o seu espaço de treino. Seu personal já montou tudo: você está na fase <b>${esc(f.nome)}</b>${f.sub?' ('+esc(f.sub)+')':''}. Em 1 minuto eu te mostro como funciona.`},
+    {t:'Treino do dia', sel:'.capa.hoje', tab:'treinos', h:'Seu treino de hoje', p:'Ele aparece aqui todo dia. É só tocar em <b>Começar treino</b>. Nos outros dias, a lista dos seus treinos fica logo abaixo.'},
+    {t:'Durante o treino', h:'Marque cada série', p:'Ajuste a carga no <b>−</b> e <b>+</b> e toque no <b>✓</b> quando terminar a série. O descanso começa sozinho e o app avisa quando acabar.', mock:true},
+    {t:'Sua evolução', sel:'.nav [data-t=evolucao]', tab:'treinos', h:'Acompanhe seu progresso', p:'Em <b>Histórico</b> ficam seus treinos e recordes. Em <b>Evolução</b>, suas fotos de antes e depois, que ficam só no seu celular. Ao terminar um treino, você ainda gera um check-in pro stories.'},
+    {t:'Seu perfil', sel:'.nav [data-t=perfil]', tab:'treinos', h:'Conte um pouco sobre você', p:'No <b>Perfil</b> você coloca foto, peso, objetivo e se tem alguma dor ou limitação. Isso ajuda seu personal a ajustar o treino.'},
+  ];
+  if(!instalado()) p.push({t:'Último passo', h:'Deixe o Carga como app', p:ios?'No Safari, toque no botão de <b>compartilhar</b> (quadrado com uma seta) e depois em <b>Adicionar à Tela de Início</b>. Ele abre em tela cheia, como um app.':'No navegador, toque no menu <b>⋮</b> e depois em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>. Ele abre em tela cheia, como um app.'});
+  return p;
+}
+function renderTour(){
+  let el=document.getElementById('tour');
+  if(ui.tour==null||!SES||isP()){if(el)el.remove();return}
+  const ps=passosTour(); const i=Math.min(ui.tour,ps.length-1), st=ps[i];
+  if(!el){el=document.createElement('div');el.id='tour';document.body.appendChild(el)}
+  const alvo=st.sel?document.querySelector(st.sel):null;
+  let hole='',pos='top:50%;transform:translateY(-50%)';
+  if(alvo){const r=alvo.getBoundingClientRect(),m=8;hole=`<div class="hole" style="left:${r.left-m}px;top:${r.top-m}px;width:${r.width+m*2}px;height:${r.height+m*2}px"></div>`;
+    const H=innerHeight; pos=r.top+r.height/2>H/2?`bottom:${Math.round(H-r.top+20)}px`:`top:${Math.round(r.bottom+20)}px`}
+  el.innerHTML=`${hole||'<div class="tv"></div>'}<div class="tb" style="${pos}" role="dialog" aria-label="Tour do app">
+    <small>${esc(st.t)} · ${i+1}/${ps.length}</small><h3>${st.h}</h3><p>${st.p}</p>
+    ${st.mock?`<div class="mock"><span class="n">1</span><span class="k"><b>−</b>40<b>+</b></span><span>12</span><span class="ck">✓</span></div>`:''}
+    <div class="tf"><div class="dots">${ps.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('')}</div>
+      ${i<ps.length-1?`<button class="link" style="color:var(--mut)" data-a="tourFim">Pular</button>`:''}
+      ${i>0?`<button class="btn dark sm" data-a="tourVoltar">Voltar</button>`:''}
+      <button class="btn y sm" data-a="tourProx">${i<ps.length-1?'Próximo':'Bora treinar'}</button></div></div>`;
+}
+function irTour(i){
+  const ps=passosTour(); ui.tour=Math.max(0,Math.min(i,ps.length-1)); const st=ps[ui.tour];
+  if(st.tab&&(ui.tab!==st.tab||ui.view)){ui.tab=st.tab;ui.view=null;render()}
+  const alvo=st.sel?document.querySelector(st.sel):null;
+  if(alvo&&alvo.scrollIntoView){const r=alvo.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-90)alvo.scrollIntoView({block:'center'})}
+  setTimeout(renderTour,30);
+}
+function talvezTour(){ if(SES&&!isP()&&!lsGet('tourOk:'+SES.alunoId,false)&&ui.tour==null){ui.tab='treinos';setTimeout(()=>irTour(0),400)} }
+addEventListener('resize',()=>{if(ui.tour!=null)renderTour()});
+addEventListener('scroll',()=>{if(ui.tour!=null)renderTour()},{passive:true});
 function vPainel(){
   const ms=ALU.lista.map(a=>({a,m:metricas(a.id)}));
   const totSem=ms.reduce((s,x)=>s+x.m.feitosSemana,0);
@@ -1505,7 +1569,7 @@ function render(){
   }
   if(h===undefined) return;
   $('#app').innerHTML=h;
-  renderOv(); renderRest();
+  renderOv(); renderRest(); if(ui.tour!=null) setTimeout(renderTour,0);
 }
 function renderOv(){$('#ov').innerHTML=(ui.picker?vPicker():'')+(ui.modal?vModal():'')}
 function confirmar(o,fn){ui.modal=o;modalFn=fn;renderOv()}
@@ -1535,7 +1599,7 @@ function iniciar(id){
 }
 const acts = {
   tab:d=>{ui.tab=d.t;ui.view=null;window.scrollTo(0,0);render()},
-  sair:()=>confirmar({titulo:'Sair?',texto:'Você volta pra tela de entrada. Os treinos continuam salvos.',ok:'Sair'},()=>{if(FB&&fauth&&isP())fauth.signOut().catch(()=>{});SES=null;FOTOS=null;lsSet('sessao',null);ui.view=null;ui.tab='treinos';ui.alunoSel=null;render()}),
+  sair:()=>confirmar({titulo:'Sair?',texto:'Você volta pra tela de entrada. Os treinos continuam salvos.',ok:'Sair'},()=>{ui.tour=null;renderTour();if(FB&&fauth&&isP())fauth.signOut().catch(()=>{});SES=null;FOTOS=null;lsSet('sessao',null);ui.view=null;ui.tab='treinos';ui.alunoSel=null;render()}),
   acesso:()=>{ui.modal={tipo:'acesso'};renderOv()},
   novoAluno:()=>{ui.modal={tipo:'aluno',cod:''};renderOv();setTimeout(()=>{const i=document.querySelector('#fAluno [name=nome]');i&&i.focus()},50)},
   gerarCod:()=>{const f=$('#fAluno');if(!f)return;$('#codNovo').value=sugereCodigo(f.nome.value)},
@@ -1611,6 +1675,10 @@ const acts = {
   copiarMsg:d=>{const a=alunoById(d.id);try{navigator.clipboard.writeText(msgAcesso(a)).then(()=>toast('Mensagem copiada'),()=>toast('Não deu pra copiar. Selecione o texto e copie.'))}catch(e){toast('Não deu pra copiar. Selecione o texto e copie.')}},
   loginPersonal:()=>{ui.loginP=true;ui.loginErr='';render()},
   loginAluno:()=>{ui.loginP=false;ui.loginErr='';render()},
+  tourProx:()=>{const n=passosTour().length;if(ui.tour>=n-1)return acts.tourFim();irTour(ui.tour+1)},
+  tourVoltar:()=>irTour(ui.tour-1),
+  tourFim:()=>{ui.tour=null;lsSet('tourOk:'+SES.alunoId,true);renderTour();window.scrollTo(0,0)},
+  verTour:()=>{ui.tab='treinos';ui.view=null;render();window.scrollTo(0,0);irTour(0)},
   wxToggle:d=>{const i=+d.i;if(i===atualIdx())return;ui.wxOpen=ui.wxOpen||[];ui.wxOpen=ui.wxOpen.includes(i)?ui.wxOpen.filter(x=>x!==i):[...ui.wxOpen,i];render()},
   addSerie:d=>{const it=A.itens[+d.i],u=it.series[it.series.length-1]||{carga:'',reps:''};it.series.push({carga:u.carga,reps:u.reps,feito:false});lsSet('ativa',A);render()},
   remSerie:d=>{A.itens[+d.i].series.pop();lsSet('ativa',A);render()},
