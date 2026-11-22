@@ -398,16 +398,13 @@ input[type=date]{color-scheme:light}
 
 
 /* ===== ajustes iPhone ===== */
-html,body{overflow-x:hidden;overflow-x:clip;max-width:100%}
+html,body{overflow-x:clip}
 #app{overflow-x:clip}
 .cel{overflow:hidden}
 .cel .st2{left:0;right:0;width:140%;margin-left:-20%}
-.nav{padding-bottom:max(env(safe-area-inset-bottom),0px)}
-html.ios-tab .nav{padding-bottom:max(env(safe-area-inset-bottom),62px)}
-html.ios-tab .foot{padding-bottom:max(calc(env(safe-area-inset-bottom) + 16px),74px)}
-html.ios-tab #rest{bottom:max(calc(env(safe-area-inset-bottom) + 86px),146px)}
-html.ios-tab .toast{bottom:max(calc(env(safe-area-inset-bottom) + 96px),156px)}
-html.ios-tab main{padding-bottom:170px!important}
+.nav{padding-bottom:env(safe-area-inset-bottom)}
+#rest{bottom:calc(86px + env(safe-area-inset-bottom))}
+.top{padding-top:env(safe-area-inset-top)}
 .day.today.off{opacity:1}
 .day.today.off .dn{background:var(--y);padding:10px 0}
 .day.today.off .dn b,.day.today.off .dn small{color:var(--ytx)}
@@ -452,6 +449,16 @@ html.ios-tab main{padding-bottom:170px!important}
 #tour .mock .ck{background:var(--y);color:var(--ytx);justify-content:center}
 #tour .mock .k b{color:var(--mut);font-weight:700}
 #tour ol{margin:10px 0 0 18px;color:var(--tx);font-size:15px;line-height:1.5}
+
+
+/* ===== perfil do personal ===== */
+.pcard .pp{display:flex;gap:14px;align-items:center}
+.pp .pf-av{width:64px;height:64px;font-size:24px;border-width:2px}
+.pp b{display:block;font-family:var(--fc);font-weight:700;font-size:20px;line-height:1.1}
+.pp small{display:block;color:var(--mut);font-size:13px;margin-top:2px}
+.pbio{margin-top:12px;font-size:14px;color:var(--tx);line-height:1.45}
+.plinks{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.plinks a{flex:1;min-width:130px}
 
 /* capa */
 .capa{position:relative;height:200px;border-radius:18px;overflow:hidden;margin-top:16px;background:#2F5645 repeating-linear-gradient(-55deg,rgba(255,255,255,.03) 0 18px,transparent 18px 36px)}
@@ -642,6 +649,7 @@ let ALU = {personal:{codigo:'personal'}, lista:[]}; // alunos + códigos
 let BIB = {customEx:[], videos:{}};                  // biblioteca compartilhada
 let PERF = {};  // alunoId -> perfil (preenchido pelo aluno)
 const perfVazio = ()=>({nascimento:'',altura:'',objetivo:'',objetivoTxt:'',nivel:'',dias:'',limitacoes:'',pesos:[],foto:''});
+let PP = {nome:'',foto:'',cref:'',bio:'',whats:'',insta:'',cidade:''}; // perfil público do personal
 let PROG = {};  // alunoId -> programa
 let HIST = {};  // alunoId -> histórico
 let S = progVazio(), H = histVazio(); // programa/histórico do aluno em foco
@@ -693,8 +701,8 @@ const vIcon = exId=>{const v=vidInfo(exId);return `<a class="vic ${v.escolhido?'
 let db = null;
 const cloud = {on:false, busy:{}, pend:{}, tm:{}, subs:{}};
 let sync = 'local';
-const caminho = k=>k==='alunos'?'plano/alunos':k==='bib'?'plano/biblioteca':k.startsWith('prog:')?'plano/p_'+k.slice(5):k.startsWith('perfil:')?'registros/u_'+k.slice(7):'registros/h_'+k.slice(5);
-const dados = k=>k==='alunos'?ALU:k==='bib'?BIB:k.startsWith('prog:')?PROG[k.slice(5)]:k.startsWith('perfil:')?PERF[k.slice(7)]:HIST[k.slice(5)];
+const caminho = k=>k==='perfilP'?'plano/personal_perfil':k==='alunos'?'plano/alunos':k==='bib'?'plano/biblioteca':k.startsWith('prog:')?'plano/p_'+k.slice(5):k.startsWith('perfil:')?'registros/u_'+k.slice(7):'registros/h_'+k.slice(5);
+const dados = k=>k==='perfilP'?PP:k==='alunos'?ALU:k==='bib'?BIB:k.startsWith('prog:')?PROG[k.slice(5)]:k.startsWith('perfil:')?PERF[k.slice(7)]:HIST[k.slice(5)];
 function persist(k){
   const d=dados(k); if(!d) return;
   lsSet(k,d);
@@ -738,7 +746,8 @@ async function initCloud(){
     if(!window.claude||!window.claude.use) throw 0;
     db=await claude.use('db'); if(!db) throw 0;
     cloud.on=true;
-    const [a,b]=await Promise.all([ler('alunos'),ler('bib')]);
+    const [a,b,pp]=await Promise.all([ler('alunos'),ler('bib'),ler('perfilP')]);
+    if(pp) PP={...PP,...pp};
     if(ready) return;
     clearTimeout(timer); setSync('ok');
     if(a) ALU=a; if(b) BIB=b;
@@ -750,7 +759,7 @@ async function initCloud(){
   }
 }
 async function baseLocal(){
-  ALU=clone(EMBED.alunos); BIB=clone(EMBED.bib); fixaBase(); ready=true; await carregaSessao();
+  ALU=clone(EMBED.alunos); BIB=clone(EMBED.bib); PP={...PP,...(lsGet('perfilP',null)||{})}; fixaBase(); ready=true; await carregaSessao();
 }
 async function carregaSessao(){
   if(!SES){render();return}
@@ -784,6 +793,7 @@ function gerarCodigo(){const a=new Uint32Array(8);crypto.getRandomValues(a);cons
 const limpaCod=c=>String(c||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
 async function keyDe(c){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('carga:'+limpaCod(c)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
 function fbRef(k){
+  if(k==='perfilP') return {doc:fs.collection('publico').doc('personal'),field:'perfil'};
   if(k==='alunos') return {doc:fs.collection('personal').doc(fuser.uid),field:'alunos'};
   if(k==='bib') return {doc:fs.collection('publico').doc('bib'),field:'bib'};
   if(k.startsWith('prog:')) return {doc:fs.collection('contas').doc(k.slice(5)),field:'prog'};
@@ -816,6 +826,7 @@ async function fbPersonal(){
   if(!a) a=await fbSemear();
   ALU=a; fixaBase();
   BIB=(await fbGet('bib'))||BIB; fixaBase();
+  try{PP={...PP,...((await fbGet('perfilP'))||{})}}catch(e){}
   await Promise.all(ALU.lista.map(async x=>{try{const sn=await fs.collection('contas').doc(x.id).get();if(sn.exists&&sn.data().capa)x.capa=sn.data().capa}catch(e){}}));
 }
 async function fbAluno(key){
@@ -824,6 +835,7 @@ async function fbAluno(key){
   const d=sn.data();
   ALU={personal:{codigo:''},lista:[{id:key,nome:d.nome||'Aluno',capa:d.capa||''}]};
   BIB=(await fbGet('bib'))||BIB; fixaBase();
+  try{PP={...PP,...((await fbGet('perfilP'))||{})}}catch(e){}
   await migrarLocal(key);
   return true;
 }
@@ -952,7 +964,7 @@ function entrar(nome,codigo){
 function vHeader(){
   return `<header class="top"><div class="top-in">
     <div class="logo">${LOGO}carga</div>
-    ${isP()?'<span class="who p">Personal</span>':(()=>{const a=alunoById(SES.alunoId);return a?`<button data-a="tab" data-t="perfil" aria-label="Perfil">${avHtml(a,'hav')}</button>`:''})()}
+    ${isP()?`<button data-a="perfilP" aria-label="Seu perfil">${ppAv('hav')}</button>`:(()=>{const a=alunoById(SES.alunoId);return a?`<button data-a="tab" data-t="perfil" aria-label="Perfil">${avHtml(a,'hav')}</button>`:''})()}
     <div id="sync" class="sync ${sync}"><b></b><span>${syncTxt()}</span></div>
     ${isP()&&!FB?`<button class="ib" data-a="acesso" aria-label="Seu código">${P(IC.key,18)}</button>`:''}
     <button class="ib" data-a="sair" aria-label="Sair">${P(IC.out,18)}</button>
@@ -996,6 +1008,8 @@ function vPerfil(){
       <button class="btn y sm" style="margin-top:12px" data-a="novoPeso">${P(IC.plus,16)} Registrar peso</button>
       ${pf.pesos.length?`<div class="plist">${[...pf.pesos].map((p,i)=>({...p,i})).reverse().slice(0,5).map(p=>`<div>${fmtData(p.data)}<b>${fmtKg(p.kg)} kg</b><button data-a="delPeso" data-i="${p.i}" aria-label="Apagar">${P(IC.x,14)}</button></div>`).join('')}</div>`:''}
     </div>
+
+    ${PP.nome||PP.foto?`<div class="lbl">Seu personal</div>${cardPersonal()}`:''}
 
     <div class="lbl">Sobre você</div>
     <div class="f2">
@@ -1194,6 +1208,49 @@ function talvezTour(){ if(SES&&!isP()&&H&&H.sessoes&&H.sessoes.length){lsSet('to
   if(SES&&!isP()&&!lsGet('tourOk:'+SES.alunoId,false)&&ui.tour==null){ui.tab='treinos';setTimeout(()=>irTour(0),400)} }
 addEventListener('resize',()=>{if(ui.tour!=null)renderTour()});
 addEventListener('scroll',()=>{if(ui.tour!=null)renderTour()},{passive:true});
+
+/* ============ PERFIL DO PERSONAL ============ */
+const ppNome=()=>PP.nome||'Seu personal';
+const ppAv=(cls='pf-av')=>`<div class="${cls} ${PP.foto?'f':''}" ${PP.foto?`style="background-image:url('${PP.foto}')"`:''}>${esc(iniciais(ppNome()))}</div>`;
+const instaUrl=v=>{const u=String(v||'').trim().replace(/^@/,'').replace(/^https?:\/\/(www\.)?instagram\.com\//,'').replace(/\/.*$/,'');return u?'https://instagram.com/'+encodeURIComponent(u):''};
+const waPP=()=>{const d=String(PP.whats||'').replace(/\D/g,'');return d?'https://wa.me/'+(d.length<=11?'55'+d:d):''};
+function vPerfilPersonal(){
+  return `<header class="top"><div class="top-in">
+      <button class="ib" data-a="voltar">${P(IC.back,20)}</button>
+      <div class="tt"><small>Personal</small><div>Seu perfil</div></div>
+    </div></header>
+    <main class="wrap" style="padding-bottom:60px">
+    <div class="pf-top">
+      <button class="pf-av ${PP.foto?'f':''}" data-a="trocarFotoP" ${PP.foto?`style="background-image:url('${PP.foto}')"`:''} aria-label="Trocar foto">${esc(iniciais(ppNome()))}<span class="pf-cam">${P(IC.cam,16)}</span></button>
+      <div><h2>${esc(ppNome())}</h2><p>${[PP.cref?'CREF '+esc(PP.cref):'',esc(PP.cidade||'')].filter(Boolean).join(' · ')||'É assim que seus alunos te veem'}</p>
+      ${PP.foto?`<button class="link" style="color:var(--mut);font-size:13px;padding:4px 0" data-a="tirarFotoP">Remover foto</button>`:''}</div>
+    </div>
+    <input type="file" id="fotoP" accept="image/*" hidden>
+    <div class="lbl">Dados profissionais</div>
+    <label><span class="fl">Nome</span><input class="inp" data-f="pp" data-k="nome" placeholder="Seu nome" value="${esc(PP.nome)}"></label>
+    <div class="f2" style="margin-top:10px">
+      <label><span class="fl">CREF</span><input class="inp" data-f="pp" data-k="cref" placeholder="000000-G/SP" value="${esc(PP.cref)}"></label>
+      <label><span class="fl">Cidade</span><input class="inp" data-f="pp" data-k="cidade" placeholder="Santos, SP" value="${esc(PP.cidade)}"></label>
+    </div>
+    <label style="display:block;margin-top:10px"><span class="fl">Sobre você</span><textarea class="ta" data-f="pp" data-k="bio" placeholder="Especialidades, formação, como você trabalha">${esc(PP.bio)}</textarea></label>
+    <div class="lbl">Contato</div>
+    <div class="f2">
+      <label><span class="fl">WhatsApp</span><input class="inp" data-f="pp" data-k="whats" inputmode="tel" placeholder="(13) 99999-9999" value="${esc(PP.whats)}"></label>
+      <label><span class="fl">Instagram</span><input class="inp" data-f="pp" data-k="insta" placeholder="@seuperfil" value="${esc(PP.insta)}"></label>
+    </div>
+    <p style="font-size:12px;color:var(--dim);margin-top:10px">Salvo automaticamente. Seus alunos veem esses dados no perfil deles, em "Seu personal".</p>
+    <div class="lbl">Como o aluno vê</div>
+    ${cardPersonal()}
+  </main>`;
+}
+function cardPersonal(){
+  const wa=waPP(), ig=instaUrl(PP.insta);
+  return `<div class="card pcard"><div class="pp">${ppAv()}<div style="min-width:0"><small style="text-transform:uppercase;letter-spacing:.08em;font-weight:700;font-size:11px;color:var(--y);margin:0 0 2px">Seu personal</small><b>${esc(ppNome())}</b>
+      <small>${[PP.cref?'CREF '+esc(PP.cref):'',esc(PP.cidade||'')].filter(Boolean).join(' · ')}</small></div></div>
+    ${PP.bio?`<div class="pbio">${esc(PP.bio)}</div>`:''}
+    ${wa||ig?`<div class="plinks">${wa?`<a class="btn wa sm" href="${esc(wa)}" target="_blank" rel="noopener">WhatsApp</a>`:''}${ig?`<a class="btn dark sm" href="${esc(ig)}" target="_blank" rel="noopener">Instagram</a>`:''}</div>`:''}
+  </div>`;
+}
 function vPainel(){
   const ms=ALU.lista.map(a=>({a,m:metricas(a.id)}));
   const totSem=ms.reduce((s,x)=>s+x.m.feitosSemana,0);
@@ -1561,6 +1618,7 @@ function render(){
   else if(carregando||!ready) h='<div class="loading">Carregando…</div>';
   else if(ui.view==='editor'&&isP()) h=vEditor();
   else if(ui.view==='aluno'&&isP()) h=vAluno();
+  else if(ui.view==='perfilP'&&isP()) h=vPerfilPersonal();
   else if(ui.view==='detalhe') h=vDetalhe();
   else if(ui.view==='treino') h=vTreino();
   else {
@@ -1680,6 +1738,9 @@ const acts = {
   tourVoltar:()=>irTour(ui.tour-1),
   tourFim:()=>{ui.tour=null;lsSet('tourOk:'+SES.alunoId,true);renderTour();window.scrollTo(0,0)},
   verTour:()=>{ui.tab='treinos';ui.view=null;render();window.scrollTo(0,0);irTour(0)},
+  perfilP:()=>{ui.view='perfilP';window.scrollTo(0,0);render()},
+  trocarFotoP:()=>{const i=$('#fotoP');i&&i.click()},
+  tirarFotoP:()=>{PP.foto='';persist('perfilP');render()},
   wxToggle:d=>{const i=+d.i;if(i===atualIdx())return;ui.wxOpen=ui.wxOpen||[];ui.wxOpen=ui.wxOpen.includes(i)?ui.wxOpen.filter(x=>x!==i):[...ui.wxOpen,i];render()},
   addSerie:d=>{const it=A.itens[+d.i],u=it.series[it.series.length-1]||{carga:'',reps:''};it.series.push({carga:u.carga,reps:u.reps,feito:false});lsSet('ativa',A);render()},
   remSerie:d=>{A.itens[+d.i].series.pop();lsSet('ativa',A);render()},
@@ -1725,6 +1786,7 @@ document.addEventListener('input',e=>{
   if(f==='busca'){ui.busca=el.value;$('#libList').innerHTML=listaEx(filtraEx(ui.filtro,ui.busca));return}
   if(f==='pbusca'){ui.picker.busca=el.value;$('#pickList').innerHTML=listaEx(filtraEx(ui.picker.filtro,ui.picker.busca),ui.picker.sel);return}
   if(f==='set'){A.itens[+el.dataset.i].series[+el.dataset.s][el.dataset.k]=el.value;lsSet('ativa',A);return}
+  if(f==='pp'&&isP()){PP[el.dataset.k]=el.value;persist('perfilP');const h=document.querySelector('.pf-top h2');if(h&&el.dataset.k==='nome')h.textContent=ppNome();return}
   if(f==='cmp'){ui.cmpPos=+el.value;const b=$('#cmpB'),dv=$('#cmpDiv');if(b)b.style.clipPath=`inset(0 0 0 ${el.value}%)`;if(dv)dv.style.left=el.value+'%';return}
   if(f==='cmpA'||f==='cmpB'){ui[f]=el.value;render();return}
   if(f==='pf'&&!isP()){const id=SES.alunoId;PERF[id][el.dataset.k]=el.value;persist('perfil:'+id);return}
@@ -1743,6 +1805,10 @@ document.addEventListener('change',async e=>{
       const f={id:uid(),alunoId:SES.alunoId,pose:(m&&m.pose)||'Frente',data:isNaN(dt)?Date.now():dt,img,peso:pa?pa.kg:''};
       await fdb.put(f);FOTOS.push(f);FOTOS.sort((a,b)=>a.data-b.data);ui.pose=f.pose;ui.cmpA=ui.cmpB=null;ui.modal=null;render();toast('Foto salva')}
     catch(err){toast('Não consegui salvar essa foto')}
+    return;
+  }
+  if(e.target.id==='fotoP'&&e.target.files&&e.target.files[0]){
+    try{PP.foto=await comprimir(e.target.files[0],360,.82);persist('perfilP');render();toast('Foto atualizada')}catch(err){toast('Não consegui abrir essa imagem')}
     return;
   }
   if(e.target.id==='fotoCheck'&&e.target.files&&e.target.files[0]){
