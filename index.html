@@ -1190,7 +1190,8 @@ function irTour(i){
   if(alvo&&alvo.scrollIntoView){const r=alvo.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-90)alvo.scrollIntoView({block:'center'})}
   setTimeout(renderTour,30);
 }
-function talvezTour(){ if(SES&&!isP()&&!lsGet('tourOk:'+SES.alunoId,false)&&ui.tour==null){ui.tab='treinos';setTimeout(()=>irTour(0),400)} }
+function talvezTour(){ if(SES&&!isP()&&H&&H.sessoes&&H.sessoes.length){lsSet('tourOk:'+SES.alunoId,true);return}
+  if(SES&&!isP()&&!lsGet('tourOk:'+SES.alunoId,false)&&ui.tour==null){ui.tab='treinos';setTimeout(()=>irTour(0),400)} }
 addEventListener('resize',()=>{if(ui.tour!=null)renderTour()});
 addEventListener('scroll',()=>{if(ui.tour!=null)renderTour()},{passive:true});
 function vPainel(){
