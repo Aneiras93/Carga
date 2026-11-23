@@ -484,6 +484,25 @@ html,body{overflow-x:clip}
 .login .logo{font-size:30px!important;gap:14px!important}
 .login .logo .selo{width:48px;height:48px}
 
+
+/* ===== cadastro de aluno ===== */
+.cad .sec{margin-top:22px}
+.cad .capa-up{position:relative;height:150px;border-radius:16px;overflow:hidden;background:var(--s2);border:1px dashed var(--dim);display:grid;place-items:center;color:var(--mut);font-weight:600;font-size:14px;width:100%}
+.cad .capa-up img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cad .capa-up span{position:relative;background:rgba(245,242,236,.92);padding:6px 12px;border-radius:10px;color:var(--tx)}
+.fase-box{padding:14px;margin-top:10px}
+.fase-box h4{font-family:var(--fc);font-weight:700;font-size:17px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.fase-box h4 i{font-style:normal;font-size:12px;font-weight:700;color:var(--y);background:var(--yt);padding:3px 8px;border-radius:6px}
+.step{display:flex;align-items:center;gap:10px;margin-top:12px}
+.step button{width:38px;height:38px;border-radius:10px;background:var(--s2);font-size:20px;font-weight:700;color:var(--tx)}
+.step b{min-width:92px;text-align:center;font-size:15px}
+.cal{margin-top:12px;background:var(--s2);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
+.cal b{color:var(--y)}
+.tog{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px;color:var(--tx)}
+.tog input{width:20px;height:20px;accent-color:var(--y)}
+.objs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.objs span{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;background:var(--yt);color:var(--y);padding:3px 8px;border-radius:6px}
+
 /* capa */
 .capa{position:relative;height:200px;border-radius:18px;overflow:hidden;margin-top:16px;background:#2F5645 repeating-linear-gradient(-55deg,rgba(255,255,255,.03) 0 18px,transparent 18px 36px)}
 .capa img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 8%}
@@ -693,7 +712,11 @@ function foco(id){
   fixaProg(PROG[id]); fixaHist(HIST[id]);
   S=PROG[id]; H=HIST[id];
 }
-function fixaProg(p){p.treinos=p.treinos||[];p.fases=p.fases||clone(FASES_PADRAO);p.faseAtiva=p.faseAtiva||1}
+function fixaProg(p){p.treinos=p.treinos||[];p.fases=p.fases||clone(FASES_PADRAO);p.faseAtiva=p.faseAtiva||1;if(p.inicio&&p.autoFase!==false)p.faseAtiva=faseHoje(p)}
+const semFase=(p,n)=>Math.max(1,+((p.fases&&p.fases[String(n)]&&p.fases[String(n)].semanas)||2));
+function iniFase(p,n){const d=new Date(p.inicio+'T00:00');if(isNaN(d))return null;if(n===2)d.setDate(d.getDate()+semFase(p,1)*7);return d}
+function faseHoje(p){const d=iniFase(p,2);if(!d)return p.faseAtiva||1;const h=new Date();h.setHours(0,0,0,0);return h>=d?2:1}
+function datasFase(p,n){const a=iniFase(p,n);if(!a)return '';const b=new Date(a);b.setDate(b.getDate()+semFase(p,n)*7-1);const f=x=>x.toLocaleDateString('pt-BR',{day:'numeric',month:'short'}).replace('.','').replace(' de ',' ');return f(a)+' – '+f(b)}
 function fixaHist(h){h.sessoes=h.sessoes||[];h.ultimas=h.ultimas||{}}
 function fixaBase(){ALU.personal=ALU.personal||{codigo:''};ALU.lista=ALU.lista||[];BIB.customEx=BIB.customEx||[];BIB.videos=BIB.videos||{}}
 
@@ -702,7 +725,7 @@ const exById = id=>allEx().find(e=>e.id===id) || {id, nome:'Exercício removido'
 const tById = id=>S.treinos.find(t=>t.id===id);
 const hoje = ()=>new Date().getDay();
 const gruposDo = t=>[...new Set(t.exercicios.map(x=>exById(x.exId).g))];
-const faseInfo = (f,p=S)=>(p.fases&&p.fases[String(f)])||FASES_PADRAO[String(f)]||{nome:'Fase '+f,sub:'',nota:''};
+const faseInfo = (f,p=S)=>{const fi=(p.fases&&p.fases[String(f)])||FASES_PADRAO[String(f)]||{nome:'Fase '+f,sub:'',nota:''};return p.inicio?{...fi,sub:datasFase(p,+f)||fi.sub}:fi};
 const faseVer = ()=>isP()?(ui.faseVer||S.faseAtiva||1):(S.faseAtiva||1);
 const visiveis = ()=>S.treinos.filter(t=>!t.fase||t.fase===faseVer());
 
@@ -794,7 +817,7 @@ async function carregaSessao(){
     const ids=SES.papel==='personal'?ALU.lista.map(a=>a.id):[SES.alunoId];
     await Promise.all(ids.map(async id=>{
       const [p,h,u]=await Promise.all([ler('prog:'+id),ler('hist:'+id),ler('perfil:'+id)]);
-      PROG[id]=p||progVazio(); HIST[id]=h||histVazio(); PERF[id]={...perfVazio(),...(u||{})};
+      PROG[id]=p||progVazio(); fixaProg(PROG[id]); HIST[id]=h||histVazio(); PERF[id]={...perfVazio(),...(u||{})};
     }));
     if(SES.papel==='personal'){
       ids.forEach(id=>ouvir('perfil:'+id,d=>{PERF[id]={...perfVazio(),...d};if(ui.view!=='editor')render()}));
@@ -853,11 +876,12 @@ async function fbPersonal(){
   BIB=(await fbGet('bib'))||BIB; fixaBase();
   try{PP={...PP,...((await fbGet('perfilP'))||{})}}catch(e){}
   await carregaBanners(true);
+  await fbMigrarCodigos();
   await Promise.all(ALU.lista.map(async x=>{try{const sn=await fs.collection('contas').doc(x.id).get();if(sn.exists&&sn.data().capa)x.capa=sn.data().capa}catch(e){}}));
 }
 async function fbAluno(key){
   const sn=await fs.collection('contas').doc(key).get();
-  if(!sn.exists) return false;
+  if(!sn.exists||sn.data().movidoPara) return false;
   const d=sn.data();
   ALU={personal:{codigo:''},lista:[{id:key,nome:d.nome||'Aluno',capa:d.capa||''}]};
   BIB=(await fbGet('bib'))||BIB; fixaBase();
@@ -1057,6 +1081,7 @@ function vPerfil(){
     <div class="lbl">Dores, lesões ou limitações</div>
     <textarea class="ta" data-f="pf" data-k="limitacoes" placeholder="Ex.: dor no joelho direito ao agachar fundo">${esc(pf.limitacoes)}</textarea>
     <p style="font-size:12px;color:var(--dim);margin-top:8px">Tudo aqui é salvo automaticamente e ajuda seu personal a ajustar o treino.</p>
+    ${FB?`<div class="lbl">Acesso</div><div class="card pcard" style="margin-top:0;display:flex;align-items:center;gap:12px"><div style="flex:1"><span class="fl" style="margin:0 0 2px">Seu código de acesso</span><b style="font-size:13px;color:var(--mut)">Use o código pra entrar em outro aparelho</b></div><button class="btn dark sm" data-a="trocarCod">Trocar</button></div>`:''}
     <button class="btn ghost full" style="margin-top:18px" data-a="verTour">Ver o tour do app de novo</button>
   </main>`;
 }
@@ -1336,6 +1361,140 @@ setInterval(()=>{const t=document.getElementById('carT');if(!t||t.children.lengt
 document.addEventListener('scroll',e=>{const t=e.target;if(!t||t.id!=='carT')return;const w=t.clientWidth+10,i=Math.round(t.scrollLeft/w);
   document.querySelectorAll('#carD i').forEach((d,k)=>d.classList.toggle('on',k===i))},true);
 ['touchstart','pointerdown'].forEach(ev=>document.addEventListener(ev,e=>{if(e.target.closest&&e.target.closest('#carT'))window.__carTouch=Date.now()},{passive:true}));
+
+/* ============ CADASTRO E EDIÇÃO DE ALUNO ============ */
+const TIPOS_FASE={
+ 'Adaptação':'Cargas leves a moderadas, terminando cada série com 3–4 repetições em reserva. O foco é aprender os movimentos.',
+ 'Base / resistência':'Mais repetições e descansos mais curtos para construir resistência e técnica.',
+ 'Hipertrofia':'Intensidade moderada a alta, com 1–3 repetições em reserva. Suba a carga quando completar todas as repetições.',
+ 'Força':'Poucas repetições com carga alta e descansos longos. Técnica sempre em primeiro lugar.',
+ 'Definição':'Ritmo mais intenso e descansos menores, junto com o plano alimentar.',
+ 'Condicionamento':'Circuitos e intervalos para melhorar o fôlego e a disposição.',
+ 'Retorno pós-lesão':'Cargas leves e movimentos controlados. Se sentir dor, pare e avise seu personal.',
+ 'Manutenção':'Treinos consistentes e cargas estáveis para manter o que você conquistou.',
+ 'Semana leve (deload)':'Semana de recuperação: menos séries e cargas mais leves.',
+ 'Personalizada':''};
+const OBJS_P=['Hipertrofia','Emagrecimento','Recomposição corporal','Força','Condicionamento físico','Saúde e qualidade de vida','Reabilitação / retorno','Performance esportiva','Mobilidade e postura'];
+const hojeISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function proxSegunda(){const d=new Date();d.setHours(0,0,0,0);const w=d.getDay();d.setDate(d.getDate()+(w===1?0:((8-w)%7)));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function abrirCadastro(id){
+  const a=id?alunoById(id):null, p=id?(PROG[id]||progVazio()):null;
+  const fx=n=>{const f=p&&p.fases&&p.fases[String(n)]||{};const tipo=f.tipo||(f.nome&&TIPOS_FASE[f.nome]!==undefined?f.nome:(f.nome&&!/^Fase \d$/.test(f.nome)?'Personalizada':(n===1?'Adaptação':'Hipertrofia')));
+    return {tipo,custom:tipo==='Personalizada'?(f.nome||''):'',semanas:+f.semanas||2,nota:f.nota!==undefined&&f.nota!==''?f.nota:TIPOS_FASE[tipo]||''}};
+  ui.cad={id:id||null,nome:a?a.nome:'',whats:a?(a.whats||''):'',codigo:a?a.codigo:sugereCodigo(''),capa:a?(a.capa||''):'',capaNova:false,
+    objetivos:a?[...(a.objetivos||[])]:[],base:'',f1:fx(1),f2:fx(2),inicio:p&&p.inicio?p.inicio:(id?'':proxSegunda()),auto:p?p.autoFase!==false:true};
+  ui.view='cadastro';window.scrollTo(0,0);render();
+}
+function calTexto(){const c=ui.cad;if(!c.inicio)return 'Sem data de início: você troca a fase manualmente.';
+  const p={inicio:c.inicio,fases:{'1':{semanas:c.f1.semanas},'2':{semanas:c.f2.semanas}}};
+  const nm=f=>f.tipo==='Personalizada'?(f.custom||'Personalizada'):f.tipo;
+  return `<b>Fase 1 · ${esc(nm(c.f1))}</b>: ${datasFase(p,1)}<br><b>Fase 2 · ${esc(nm(c.f2))}</b>: ${datasFase(p,2)}${c.auto?'<br>O app troca pra Fase 2 sozinho na data.':''}`}
+function vFaseCad(n){const f=ui.cad['f'+n];
+  return `<div class="card fase-box"><h4>Fase ${n} <i>${f.semanas} semana${f.semanas>1?'s':''}</i></h4>
+    <div class="opts">${Object.keys(TIPOS_FASE).map(t=>`<button type="button" class="opt ${f.tipo===t?'on':''}" data-a="cadTipo" data-n="${n}" data-v="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+    ${f.tipo==='Personalizada'?`<input class="inp" style="margin-top:10px" data-f="cadF" data-n="${n}" data-k="custom" placeholder="Nome da fase" value="${esc(f.custom)}">`:''}
+    <div class="step"><span class="fl" style="margin:0;flex:1">Duração</span><button type="button" data-a="cadSem" data-n="${n}" data-d="-1">−</button><b>${f.semanas} semana${f.semanas>1?'s':''}</b><button type="button" data-a="cadSem" data-n="${n}" data-d="1">+</button></div>
+    <label style="display:block;margin-top:12px"><span class="fl">Orientação pro aluno</span><textarea class="ta" style="min-height:70px" data-f="cadF" data-n="${n}" data-k="nota">${esc(f.nota)}</textarea></label>
+  </div>`}
+function vCadastro(){
+  const c=ui.cad; if(!c){ui.view=null;return render()}
+  return `<header class="top"><div class="top-in">
+      <button class="ib" data-a="cadCancelar">${P(IC.back,20)}</button>
+      <div class="tt"><small>${c.id?'Editar aluno':'Novo aluno'}</small><div>${esc(c.nome||'Cadastro')}</div></div>
+    </div></header>
+    <main class="wrap cad" style="padding-bottom:130px">
+    <div class="sec"><div class="lbl" style="margin-top:0">Foto de capa</div>
+      <button type="button" class="capa-up" data-a="cadCapa">${c.capa?`<img src="${c.capa}" alt="">`:''}<span>${c.capa?'Trocar foto':'Adicionar foto de capa'}</span></button>
+      ${c.capa?`<button type="button" class="link" style="color:var(--mut)" data-a="cadCapaRem">Remover foto</button>`:'<p style="font-size:12px;color:var(--dim);margin-top:6px">Aparece no topo da tela inicial do aluno. Foto horizontal, com o rosto mais pra cima.</p>'}
+      <input type="file" id="cadCapaIn" accept="image/*" hidden></div>
+    <div class="sec"><div class="lbl" style="margin-top:0">Dados</div>
+      <label><span class="fl">Nome</span><input class="inp" data-f="cad" data-k="nome" placeholder="Nome do aluno" value="${esc(c.nome)}"></label>
+      <div class="f2" style="margin-top:10px">
+        <label><span class="fl">WhatsApp</span><input class="inp" data-f="cad" data-k="whats" inputmode="tel" placeholder="(13) 99999-9999" value="${esc(c.whats)}"></label>
+        <label><span class="fl">Código de acesso</span><input class="inp" data-f="cad" data-k="codigo" ${FB&&c.id?'readonly style="opacity:.7"':''} value="${esc(c.codigo)}" autocapitalize="characters"></label>
+      </div>
+      ${c.id?'':`<button type="button" class="gen" data-a="cadGerar">Gerar outro código</button>`}</div>
+    <div class="sec"><div class="lbl" style="margin-top:0">Objetivo do aluno</div>
+      <div class="opts">${OBJS_P.map(o=>`<button type="button" class="opt ${c.objetivos.includes(o)?'on':''}" data-a="cadObj" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>
+      <p style="font-size:12px;color:var(--dim);margin-top:8px">Marque um ou mais.</p></div>
+    ${c.id?'':`<div class="sec"><div class="lbl" style="margin-top:0">Treinos</div>
+      <select class="inp" data-f="cad" data-k="base"><option value="">Começar com programa vazio</option>${ALU.lista.map(x=>`<option value="${x.id}" ${c.base===x.id?'selected':''}>Cópia do programa de ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    <div class="sec"><div class="lbl" style="margin-top:0">Fases e calendário</div>
+      <label><span class="fl">Início do programa</span><input class="inp" type="date" data-f="cad" data-k="inicio" value="${esc(c.inicio)}"></label>
+      ${vFaseCad(1)}${vFaseCad(2)}
+      <div class="cal" id="cadCal">${calTexto()}</div>
+      <label class="tog"><input type="checkbox" data-f="cadAuto" ${c.auto?'checked':''}> Trocar de fase automaticamente na data</label></div>
+    ${c.id?`<button type="button" class="link" style="color:var(--red);margin-top:24px;width:100%" data-a="removerAluno" data-id="${c.id}">Remover aluno</button>`:''}
+    </main>
+    <div class="foot"><div class="wrap"><button class="btn dark" data-a="cadCancelar">Cancelar</button><button class="btn y" style="flex:1" data-a="cadSalvar">${c.id?'Salvar':'Cadastrar aluno'}</button></div></div>`;
+}
+async function salvarCadastro(){
+  const c=ui.cad, nome=String(c.nome).trim(), cod=String(c.codigo).trim().toUpperCase();
+  if(!nome) return toast('Digite o nome do aluno');
+  if(!codigoLivre(cod,c.id)) return toast('Esse código já está em uso');
+  const fase=n=>{const f=c['f'+n];return {tipo:f.tipo,nome:f.tipo==='Personalizada'?(String(f.custom).trim()||'Fase '+n):f.tipo,sub:'',nota:String(f.nota||'').trim(),semanas:f.semanas}};
+  const aplica=p=>{p.fases=p.fases||{};p.fases['1']=fase(1);p.fases['2']=fase(2);p.inicio=c.inicio||'';p.autoFase=!!c.auto;if(!p.inicio)delete p.inicio;fixaProg(p)};
+  let id=c.id;
+  if(id){
+    const a=alunoById(id); a.nome=nome; a.whats=String(c.whats||'').trim(); a.objetivos=[...c.objetivos]; if(!FB)a.codigo=cod;
+    if(c.capaNova) a.capa=c.capa;
+    const p=PROG[id]||(PROG[id]=progVazio()); aplica(p);
+    persist('alunos'); persist('prog:'+id);
+  } else {
+    id=FB?await keyDe(cod):'a'+uid();
+    let p=progVazio();
+    if(c.base&&PROG[c.base]){p=clone(PROG[c.base]);p.faseAtiva=1;p.treinos.forEach(t=>{t.id=uid();t.atualizadoEm=Date.now();t.exercicios.forEach(x=>{x.uid=uid();x.carga=''})})}
+    aplica(p); PROG[id]=p; HIST[id]=histVazio();
+    ALU.lista.push({id,nome,codigo:cod,whats:String(c.whats||'').trim(),objetivos:[...c.objetivos],criadoEm:Date.now(),capa:c.capa||''});
+    persist('alunos'); persist('prog:'+id); persist('hist:'+id);
+    ouvir('hist:'+id,d=>{HIST[id]=d;fixaHist(d);if(ui.alunoSel===id)foco(id);if(ui.view!=='editor')render()});
+  }
+  if(c.capaNova&&FB&&fs){try{await fs.collection('contas').doc(id).set({capa:c.capa||''},{merge:true})}catch(e){toast('Não foi possível salvar a foto')}}
+  const novo=!c.id; ui.cad=null;
+  acts.abrirAluno({id});
+  if(novo){ui.modal={tipo:'msgAluno',id,novo:true};renderOv()} else toast('Aluno atualizado');
+}
+
+/* ============ ALUNO TROCA O PRÓPRIO CÓDIGO (Firebase) ============ */
+async function trocarCodigoAluno(novo){
+  const c=limpaCod(novo), old=SES.alunoId;
+  if(c.length<6) return 'Use pelo menos 6 letras ou números.';
+  const nk=await keyDe(c);
+  if(nk===old) return 'Esse já é o seu código.';
+  const ref=id=>fs.collection('contas').doc(id), reg=id=>fs.collection('registros').doc(id);
+  if((await ref(nk).get()).exists) return 'Esse código já está em uso. Escolha outro.';
+  const od=(await ref(old).get()).data()||{};
+  const nd={...od,de:old,codigo:c}; delete nd.movidoPara;
+  await ref(nk).set(nd);
+  const rs=await reg(old).get(); const rd=rs.exists?rs.data():{};
+  const up={}; if(rd.hist)up.hist=rd.hist; if(rd.perfil)up.perfil=rd.perfil;
+  await reg(nk).set(Object.keys(up).length?up:{hist:{sessoes:[],ultimas:{}}});
+  await ref(old).set({movidoPara:nk},{merge:true});
+  // leva o que é só deste aparelho junto
+  try{const t=await fdb.all();for(const f of (t||[])) if(f.alunoId===old){f.alunoId=nk;await fdb.put(f)}}catch(e){}
+  if(lsGet('tourOk:'+old,false)) lsSet('tourOk:'+nk,true);
+  PROG[nk]=PROG[old];HIST[nk]=HIST[old];PERF[nk]=PERF[old];
+  ALU.lista[0].id=nk; SES.alunoId=nk; lsSet('sessao',SES); FOTOS=null; cloud.subs={};
+  ouvir('prog:'+nk,d=>{PROG[nk]=d;foco(nk);if(ui.view!=='treino')render()});
+  foco(nk);
+  return null;
+}
+async function fbMigrarCodigos(){ // personal: segue os alunos que trocaram de código
+  let mudou=false;
+  for(const x of ALU.lista){
+    try{
+      let sn=await fs.collection('contas').doc(x.id).get(), passos=0;
+      while(sn.exists&&sn.data().movidoPara&&passos<5){
+        const velho=x.id, nk=sn.data().movidoPara;
+        const ns=await fs.collection('contas').doc(nk).get(); if(!ns.exists)break;
+        x.id=nk; if(ns.data().codigo)x.codigo=ns.data().codigo; mudou=true;
+        try{await fs.collection('contas').doc(velho).delete();await fs.collection('registros').doc(velho).delete()}catch(e){}
+        sn=ns; passos++;
+      }
+    }catch(e){}
+  }
+  if(mudou){await fbSet('alunos',ALU)}
+}
 function vPainel(){
   const ms=ALU.lista.map(a=>({a,m:metricas(a.id)}));
   const totSem=ms.reduce((s,x)=>s+x.m.feitosSemana,0);
@@ -1356,6 +1515,7 @@ function vPainel(){
         <div class="ac-h">${avHtml(a)}
           <div class="info"><b>${esc(a.nome)}</b><small>${esc(faseInfo(m.p.faseAtiva,m.p).nome)}${faseInfo(m.p.faseAtiva,m.p).sub?' · '+esc(faseInfo(m.p.faseAtiva,m.p).sub):''}</small></div>
           <span class="st ${m.status.c}">${esc(m.status.t)}</span></div>
+        ${(a.objetivos||[]).length?`<div class="objs">${a.objetivos.slice(0,3).map(o=>`<span>${esc(o)}</span>`).join('')}</div>`:''}
         <div class="wk">${ORDEM.map((dd,i)=>`<div><i class="${m.diasFeitos.has(dd)&&i<=w?'done':m.diasPlan.has(dd)?'plan':''} ${i===w?'today':''}"></i>${DIAS[dd]}</div>`).join('')}</div>
         <div class="pbar"><div style="width:${pct}%"></div></div>
         <div class="ac-f"><span>Semana: <b>${m.feitosSemana}/${m.planSemana}</b> treinos</span>
@@ -1491,6 +1651,7 @@ function vAluno(){
         <div class="ac-h">${avHtml(a)}
           <div class="info"><b>${esc(a.nome)}</b><small>Código: <b style="display:inline;font-size:13px;color:var(--y)">${esc(a.codigo)}</b></small></div>
           <span class="st ${m.status.c}">${esc(m.status.t)}</span></div>
+        ${(a.objetivos||[]).length?`<div class="objs">${a.objetivos.map(o=>`<span>${esc(o)}</span>`).join('')}</div>`:''}
         <div class="ac-f"><span>Fase ativa: <b>${esc(f.nome)}${f.sub?' · '+esc(f.sub):''}</b></span>
           <span>Semana: <b>${m.feitosSemana}/${m.planSemana}</b></span>
           <span>Total: <b>${m.h.sessoes.length}</b> treinos</span>
@@ -1688,6 +1849,13 @@ function vModal(){
     <div class="col"><a class="btn wa full" href="${esc(waLink(a))}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
     <button class="btn dark full" data-a="copiarMsg" data-id="${a.id}">${P(IC.copy,16)} Copiar mensagem</button>
     <button class="link" style="color:var(--mut)" data-a="fecharModal">Fechar</button></div></div></div>`}
+  if(m.tipo==='trocarCod') return `<div class="ov c" data-a="fecharModal" data-self="1"><form class="dlg" id="fTrocaCod">
+    <h3>Trocar código</h3><p>Escolha um código novo com pelo menos 6 letras ou números. O antigo para de funcionar na hora.</p>
+    <label>Novo código</label><input class="inp" name="c1" autocapitalize="characters" autocorrect="off" spellcheck="false" required style="letter-spacing:.06em;font-weight:700">
+    <label>Repita o código</label><input class="inp" name="c2" autocapitalize="characters" autocorrect="off" spellcheck="false" required style="letter-spacing:.06em;font-weight:700">
+    <div class="err" style="color:var(--red);font-weight:600;font-size:14px;margin-top:10px;min-height:20px">${esc(m.err||'')}</div>
+    <div class="row" style="margin-top:12px"><button type="button" class="btn dark" data-a="fecharModal">Cancelar</button><button class="btn y" ${m.busy?'disabled':''}>${m.busy?'Trocando…':'Trocar'}</button></div>
+  </form></div>`;
   if(m.tipo==='fim'){const r=m.r;return `<div class="ov c" data-a="fecharModal" data-self="1"><div class="dlg"><h3>Finalizar treino?</h3>
     <div class="sumg"><div><b>${r.feitas}/${r.tot}</b><small>Séries</small></div><div><b>${r.vol?Math.round(r.vol).toLocaleString('pt-BR'):'–'}</b><small>Kg levantados</small></div><div><b>${esc(r.dur)}</b><small>Tempo</small></div></div>
     ${r.faltam?`<div class="warn">Faltaram ${r.faltam} série${r.faltam>1?'s':''}${r.exFalt?` em ${r.exFalt} exercício${r.exFalt>1?'s':''}`:''}. Dá pra voltar e terminar, ou salvar assim mesmo.</div>`:''}
@@ -1704,6 +1872,7 @@ function render(){
   else if(ui.view==='editor'&&isP()) h=vEditor();
   else if(ui.view==='aluno'&&isP()) h=vAluno();
   else if(ui.view==='perfilP'&&isP()) h=vPerfilPersonal();
+  else if(ui.view==='cadastro'&&isP()) h=vCadastro();
   else if(ui.view==='detalhe') h=vDetalhe();
   else if(ui.view==='treino') h=vTreino();
   else {
@@ -1745,9 +1914,9 @@ const acts = {
   tab:d=>{ui.tab=d.t;ui.view=null;window.scrollTo(0,0);render()},
   sair:()=>confirmar({titulo:'Sair?',texto:'Você volta pra tela de entrada. Os treinos continuam salvos.',ok:'Sair'},()=>{ui.tour=null;renderTour();if(FB&&fauth&&isP())fauth.signOut().catch(()=>{});SES=null;FOTOS=null;lsSet('sessao',null);ui.view=null;ui.tab='treinos';ui.alunoSel=null;render()}),
   acesso:()=>{ui.modal={tipo:'acesso'};renderOv()},
-  novoAluno:()=>{ui.modal={tipo:'aluno',cod:''};renderOv();setTimeout(()=>{const i=document.querySelector('#fAluno [name=nome]');i&&i.focus()},50)},
+  novoAluno:()=>{abrirCadastro(null);setTimeout(()=>{const i=document.querySelector('[data-f=cad][data-k=nome]');i&&i.focus()},50)},
   gerarCod:()=>{const f=$('#fAluno');if(!f)return;$('#codNovo').value=sugereCodigo(f.nome.value)},
-  editarAluno:()=>{ui.modal={tipo:'aluno',id:ui.alunoSel};renderOv()},
+  editarAluno:()=>abrirCadastro(ui.alunoSel),
   removerAluno:d=>{const a=alunoById(d.id);confirmar({titulo:'Remover '+a.nome+'?',texto:'O aluno perde o acesso e o programa e o histórico dele são apagados. Não dá pra desfazer.',ok:'Remover',perigo:true},()=>{
     ALU.lista=ALU.lista.filter(x=>x.id!==a.id); persist('alunos'); apagar('prog:'+a.id); apagar('hist:'+a.id); delete PROG[a.id]; delete HIST[a.id];
     if(ui.alunoSel===a.id){ui.alunoSel=null;foco(null)} ui.view=null; ui.tab='painel'; render(); toast('Aluno removido')})},
@@ -1755,7 +1924,7 @@ const acts = {
   escolherAluno:()=>{ui.modal={tipo:'escolherAluno'};renderOv()},
   selAluno:d=>{ui.alunoSel=d.id;ui.faseVer=null;foco(d.id);ui.modal=null;render()},
   verFase:d=>{ui.faseVer=+d.f;render()},
-  ativarFase:d=>{const f=+d.f;confirmar({titulo:'Ativar '+faseInfo(f).nome+'?',texto:'O aluno passa a ver os treinos desta fase no lugar da outra.',ok:'Ativar'},()=>{S.faseAtiva=f;persistS();render();toast(faseInfo(f).nome+' ativa pro aluno')})},
+  ativarFase:d=>{const f=+d.f;confirmar({titulo:'Ativar '+faseInfo(f).nome+'?',texto:'O aluno passa a ver os treinos desta fase no lugar da outra.',ok:'Ativar'},()=>{S.faseAtiva=f;S.autoFase=false;persistS();render();toast(faseInfo(f).nome+' ativa pro aluno')})},
   detalhe:d=>{ui.view='detalhe';ui.detId=d.id;window.scrollTo(0,0);render()},
   editar:d=>{ui.view='editor';ui.editId=d.id;window.scrollTo(0,0);render()},
   novo:()=>{const now=Date.now(),t={id:uid(),letra:proxLetra(),nome:'',dias:[],fase:faseVer(),criadoEm:now,atualizadoEm:now,exercicios:[]};S.treinos.push(t);persistS();acts.editar({id:t.id})},
@@ -1829,6 +1998,15 @@ const acts = {
   bnAdd:()=>{const i=$('#bnIn');i&&i.click()},
   bnDel:d=>confirmar({titulo:'Remover banner?',texto:'Ele sai do carrossel de todos os alunos.',ok:'Remover',perigo:true},async()=>{const [b]=BANNERS.splice(+d.i,1);render();await salvaBanners();try{if(FB&&fs&&b)await fs.collection('publico').doc('banner_'+b.id).delete()}catch(e){}}),
   bnMover:d=>{const i=+d.i,j=i+(+d.d);if(j<0||j>=BANNERS.length)return;[BANNERS[i],BANNERS[j]]=[BANNERS[j],BANNERS[i]];render();salvaBanners()},
+  cadCancelar:()=>{const id=ui.cad&&ui.cad.id;ui.cad=null;ui.view=id?'aluno':null;if(!id)ui.tab='painel';render()},
+  cadSalvar:()=>salvarCadastro(),
+  cadGerar:()=>{ui.cad.codigo=sugereCodigo(ui.cad.nome);render()},
+  cadObj:d=>{const o=ui.cad.objetivos,i=o.indexOf(d.v);i>=0?o.splice(i,1):o.push(d.v);render()},
+  cadTipo:d=>{const f=ui.cad['f'+d.n],antes=TIPOS_FASE[f.tipo]||'';f.tipo=d.v;if(!f.nota||f.nota===antes)f.nota=TIPOS_FASE[d.v]||'';render()},
+  cadSem:d=>{const f=ui.cad['f'+d.n];f.semanas=Math.max(1,Math.min(16,f.semanas+(+d.d)));render()},
+  cadCapa:()=>{const i=$('#cadCapaIn');i&&i.click()},
+  cadCapaRem:()=>{ui.cad.capa='';ui.cad.capaNova=true;render()},
+  trocarCod:()=>{ui.modal={tipo:'trocarCod'};renderOv();setTimeout(()=>{const i=document.querySelector('#fTrocaCod [name=c1]');i&&i.focus()},50)},
   wxToggle:d=>{const i=+d.i;if(i===atualIdx())return;ui.wxOpen=ui.wxOpen||[];ui.wxOpen=ui.wxOpen.includes(i)?ui.wxOpen.filter(x=>x!==i):[...ui.wxOpen,i];render()},
   addSerie:d=>{const it=A.itens[+d.i],u=it.series[it.series.length-1]||{carga:'',reps:''};it.series.push({carga:u.carga,reps:u.reps,feito:false});lsSet('ativa',A);render()},
   remSerie:d=>{A.itens[+d.i].series.pop();lsSet('ativa',A);render()},
@@ -1874,6 +2052,9 @@ document.addEventListener('input',e=>{
   if(f==='busca'){ui.busca=el.value;$('#libList').innerHTML=listaEx(filtraEx(ui.filtro,ui.busca));return}
   if(f==='pbusca'){ui.picker.busca=el.value;$('#pickList').innerHTML=listaEx(filtraEx(ui.picker.filtro,ui.picker.busca),ui.picker.sel);return}
   if(f==='set'){A.itens[+el.dataset.i].series[+el.dataset.s][el.dataset.k]=el.value;lsSet('ativa',A);return}
+  if(f==='cad'&&ui.cad){ui.cad[el.dataset.k]=el.value;if(el.dataset.k==='inicio'){const c=$('#cadCal');if(c)c.innerHTML=calTexto()}return}
+  if(f==='cadF'&&ui.cad){ui.cad['f'+el.dataset.n][el.dataset.k]=el.value;if(el.dataset.k==='custom'){const c=$('#cadCal');if(c)c.innerHTML=calTexto()}return}
+  if(f==='cadAuto'&&ui.cad){ui.cad.auto=el.checked;const c=$('#cadCal');if(c)c.innerHTML=calTexto();return}
   if(f==='bnLink'&&isP()){const b=BANNERS[+el.dataset.i];if(b){b.link=el.value.trim();clearTimeout(window.__bnT);window.__bnT=setTimeout(()=>salvaBanners(),800)}return}
   if(f==='pp'&&isP()){PP[el.dataset.k]=el.value;persist('perfilP');const h=document.querySelector('.pf-top h2');if(h&&el.dataset.k==='nome')h.textContent=ppNome();return}
   if(f==='cmp'){ui.cmpPos=+el.value;const b=$('#cmpB'),dv=$('#cmpDiv');if(b)b.style.clipPath=`inset(0 0 0 ${el.value}%)`;if(dv)dv.style.left=el.value+'%';return}
@@ -1888,12 +2069,17 @@ document.addEventListener('input',e=>{
   tocar(t);
 });
 document.addEventListener('change',async e=>{
+  if(e.target.dataset&&e.target.dataset.f==='cadAuto'&&ui.cad){ui.cad.auto=e.target.checked;const c=$('#cadCal');if(c)c.innerHTML=calTexto();return}
   if(e.target.id==='fotoEvo'&&e.target.files&&e.target.files[0]){
     const m=ui.modal, fm=$('#fFoto'), dt=fm?new Date(fm.data.value+'T12:00').getTime():Date.now();
     try{const img=await comprimir(e.target.files[0],1000,.8);const pf=PERF[SES.alunoId],pa=pf&&pesoAtual(pf);
       const f={id:uid(),alunoId:SES.alunoId,pose:(m&&m.pose)||'Frente',data:isNaN(dt)?Date.now():dt,img,peso:pa?pa.kg:''};
       await fdb.put(f);FOTOS.push(f);FOTOS.sort((a,b)=>a.data-b.data);ui.pose=f.pose;ui.cmpA=ui.cmpB=null;ui.modal=null;render();toast('Foto salva')}
     catch(err){toast('Não consegui salvar essa foto')}
+    return;
+  }
+  if(e.target.id==='cadCapaIn'&&e.target.files&&e.target.files[0]){
+    try{ui.cad.capa=await comprimir(e.target.files[0],1400,.8);ui.cad.capaNova=true;render()}catch(err){toast('Não consegui abrir essa foto')}
     return;
   }
   if(e.target.id==='bnIn'&&e.target.files&&e.target.files[0]){
@@ -1922,6 +2108,16 @@ document.addEventListener('submit',async e=>{
   const id=e.target.id, fd=new FormData(e.target);
   if(id==='fLogin') return FB?entrarFB(fd.get('codigo')):entrar(fd.get('nome'),fd.get('codigo'));
   if(id==='fLoginP') return entrarPersonal(fd.get('email'),fd.get('senha'));
+  if(id==='fTrocaCod'){
+    const m=ui.modal, c1=limpaCod(fd.get('c1')), c2=limpaCod(fd.get('c2'));
+    if(c1!==c2){m.err='Os dois códigos não são iguais.';return renderOv()}
+    if(!/^[A-Z0-9]{6,20}$/.test(c1)){m.err='Use de 6 a 20 letras ou números, sem espaço.';return renderOv()}
+    m.busy=true;m.err='';renderOv();
+    try{const er=await trocarCodigoAluno(c1);if(er){m.busy=false;m.err=er;return renderOv()}
+      ui.modal=null;render();toast('Código trocado. Agora é '+c1)}
+    catch(err){m.busy=false;m.err='Não consegui trocar agora. Tente de novo.';renderOv()}
+    return;
+  }
   if(id==='fPeso'){
     const kg=num(fd.get('kg')), dt=new Date(String(fd.get('data'))+'T12:00').getTime();
     if(!(kg>20&&kg<400)) return toast('Peso inválido');
