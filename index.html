@@ -491,6 +491,12 @@ html,body{overflow-x:clip}
 .cad .capa-up img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .cad .capa-up span{position:relative;background:rgba(245,242,236,.92);padding:6px 12px;border-radius:10px;color:var(--tx)}
 .fase-box{padding:14px;margin-top:10px}
+.mdl{display:block;width:100%;text-align:left;margin:0;padding:14px;border:1.5px solid var(--line)}
+.mdl.on{border-color:var(--y);background:var(--yt)}
+.mdl-h{display:flex;align-items:center;gap:8px}.mdl-h b{flex:1;font-size:15px}
+.mdl-h i{font-style:normal;font-size:11px;font-weight:700;color:var(--y);background:var(--yt);padding:3px 8px;border-radius:6px;white-space:nowrap}
+.mdl.on .mdl-h i{background:var(--s1)}
+.mdl p{font-size:13px;color:var(--mut);margin-top:4px;line-height:1.4}.mdl small{display:block;font-size:12px;color:var(--dim);margin-top:6px;font-weight:600}
 .fase-box h4{font-family:var(--fc);font-weight:700;font-size:17px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .fase-box h4 i{font-style:normal;font-size:12px;font-weight:700;color:var(--y);background:var(--yt);padding:3px 8px;border-radius:6px}
 .step{display:flex;align-items:center;gap:10px;margin-top:12px}
@@ -1377,12 +1383,72 @@ const TIPOS_FASE={
 const OBJS_P=['Hipertrofia','Emagrecimento','Recomposição corporal','Força','Condicionamento físico','Saúde e qualidade de vida','Reabilitação / retorno','Performance esportiva','Mobilidade e postura'];
 const hojeISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function proxSegunda(){const d=new Date();d.setHours(0,0,0,0);const w=d.getDay();d.setDate(d.getDate()+(w===1?0:((8-w)%7)));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+
+/* ============ MODELOS DE PROGRAMA ============ */
+// treino: [letra, nome, fase(0=sempre), dias, [[exId, séries, reps, descanso, obs?], ...]]
+const MODELOS_PADRAO=[
+ {id:'m-ini3',nome:'Iniciação 3x · Full Body → PPL',desc:'Pra quem está começando. 2 semanas de full body e depois Push/Pull/Legs.',nivel:'Iniciante',freq:'3x por semana',
+  fases:{'1':{tipo:'Adaptação',semanas:2},'2':{tipo:'Hipertrofia',semanas:2}},treinos:[
+  ['A','Full Body A',1,[1],[['leg-press',2,'12-15',75],['mesa-flexora',2,'12-15',75],['chest-press',2,'12-15',75],['puxada-frente',2,'12-15',75],['elev-lat',2,'12-15',60],['tri-pulley',2,'12-15',60],['abd-maq',2,'15',60]]],
+  ['B','Full Body B',1,[3],[['agach-smith',2,'12',90],['extensora',2,'12-15',60],['remada-baixa',2,'12-15',75],['supino-incl-maq',2,'12',75],['desenv-maq',2,'12',75],['rosca-direta',2,'12',60],['pant-sentado',2,'15',60]]],
+  ['C','Full Body C',1,[5],[['leg-press',2,'12',75],['mesa-flexora',2,'12-15',75],['puxada-tri',2,'12',75],['chest-press',2,'12',75],['abdutora',2,'15',60],['rosca-martelo',2,'12',60],['tri-corda',2,'12',60]]],
+  ['D','Push · Peito, ombros e tríceps',2,[1],[['chest-press',3,'10-12',90],['supino-incl-h',2,'10-12',90],['desenv-maq',2,'10-12',75],['elev-lat',2,'12-15',60],['tri-pulley',2,'10-12',60],['tri-frances',2,'10-12',60]]],
+  ['E','Pull · Costas e bíceps',2,[3],[['puxada-frente',3,'10-12',90],['remada-baixa',2,'10-12',90],['remada-maq',2,'10-12',75],['face-pull',2,'12-15',60],['rosca-direta',2,'10-12',60],['rosca-martelo',2,'10-12',60]]],
+  ['F','Legs · Pernas',2,[5],[['agach-smith',3,'10-12',120],['leg-press',2,'10-12',90],['extensora',2,'12',60],['mesa-flexora',3,'10-12',75],['abdutora',2,'12-15',60],['pant-sentado',3,'12-15',60],['abd-maq',2,'15',60]]]]},
+ {id:'m-abc',nome:'ABC Hipertrofia',desc:'Divisão clássica em 3 treinos, cada um 2x por semana. Fecha com 1 semana leve.',nivel:'Intermediário',freq:'6x por semana',
+  fases:{'1':{tipo:'Hipertrofia',semanas:6},'2':{tipo:'Semana leve (deload)',semanas:1}},treinos:[
+  ['A','Peito, ombros e tríceps',0,[1,4],[['supino-reto',4,'8-10',90],['supino-incl-h',3,'10-12',90],['peck-deck',3,'12',60],['desenv-h',3,'10-12',75],['elev-lat',3,'12-15',60],['tri-pulley',3,'10-12',60],['tri-frances',3,'10-12',60]]],
+  ['B','Costas e bíceps',0,[2,5],[['puxada-frente',4,'8-10',90],['remada-curvada',3,'8-10',90],['remada-baixa',3,'10-12',75],['pulldown',3,'12',60],['face-pull',3,'12-15',60],['rosca-direta',3,'10-12',60],['rosca-martelo',3,'10-12',60]]],
+  ['C','Pernas',0,[3,6],[['agachamento',4,'8-10',120],['leg-press',3,'10-12',90],['extensora',3,'12',60],['stiff',3,'10-12',90],['mesa-flexora',3,'10-12',75],['elev-pelvica',3,'10-12',75],['pant-pe',4,'12-15',45]]]]},
+ {id:'m-ul4',nome:'Superior / Inferior 4x',desc:'Cada grupo 2x por semana. Começa em hipertrofia e passa pra força.',nivel:'Intermediário',freq:'4x por semana',
+  fases:{'1':{tipo:'Hipertrofia',semanas:4},'2':{tipo:'Força',semanas:4}},treinos:[
+  ['A','Superior A',0,[1],[['supino-reto',4,'6-8',120],['remada-curvada',4,'6-8',120],['desenv-h',3,'8-10',90],['puxada-frente',3,'8-10',90],['rosca-direta',2,'10-12',60],['tri-testa',2,'10-12',60]]],
+  ['B','Inferior A',0,[2],[['agachamento',4,'6-8',150],['stiff',3,'8-10',120],['leg-press',3,'10-12',90],['mesa-flexora',3,'10-12',75],['pant-pe',4,'10-12',60],['prancha',3,'40s',45]]],
+  ['C','Superior B',0,[4],[['supino-incl-h',4,'8-10',90],['puxada-tri',4,'8-10',90],['remada-uni',3,'10-12',75],['elev-lat',3,'12-15',60],['rosca-martelo',3,'10-12',60],['tri-corda',3,'10-12',60]]],
+  ['D','Inferior B',0,[5],[['hack',4,'8-10',120],['elev-pelvica',4,'8-10',90],['bulgaro',3,'10-12',90,'Cada perna'],['cadeira-flexora',3,'10-12',75],['pant-sentado',4,'12-15',45],['abd-infra',3,'12-15',45]]]]},
+ {id:'m-emag',nome:'Emagrecimento e condicionamento 3x',desc:'Circuitos com pouco descanso e cardio no começo e no fim.',nivel:'Todos os níveis',freq:'3x por semana',
+  fases:{'1':{tipo:'Condicionamento',semanas:4},'2':{tipo:'Definição',semanas:4}},treinos:[
+  ['A','Circuito A',0,[1],[['esteira',1,'10 min',0,'Aquecimento'],['agach-smith',3,'15',30,'Circuito: faça um exercício atrás do outro e descanse 90s no fim de cada volta'],['chest-press',3,'15',30],['remada-baixa',3,'15',30],['afundo',3,'12',30,'Cada perna'],['desenv-maq',3,'15',30],['prancha',3,'30s',30],['bike',1,'15 min',0,'Intervalado: 1 min forte, 1 min leve']]],
+  ['B','Circuito B',0,[3],[['bike',1,'10 min',0,'Aquecimento'],['leg-press',3,'15',30,'Circuito: faça um exercício atrás do outro e descanse 90s no fim de cada volta'],['puxada-frente',3,'15',30],['flexao',3,'máx.',30],['elev-pelvica',3,'15',30],['elev-lat',3,'15',30],['abd-supra',3,'20',30],['escada',1,'12 min',0]]],
+  ['C','Circuito C',0,[5],[['eliptico',1,'10 min',0,'Aquecimento'],['extensora',3,'15',30,'Circuito: faça um exercício atrás do outro e descanse 90s no fim de cada volta'],['mesa-flexora',3,'15',30],['remada-maq',3,'15',30],['supino-reto-h',3,'15',30],['abdutora',3,'20',30],['abd-infra',3,'15',30],['corda',5,'1 min',30]]]]},
+ {id:'m-ret',nome:'Retorno e saúde 2x',desc:'Máquinas, cargas leves e foco em postura. Bom pra quem está voltando ou tem alguma limitação.',nivel:'Iniciante',freq:'2x por semana',
+  fases:{'1':{tipo:'Retorno pós-lesão',semanas:3},'2':{tipo:'Adaptação',semanas:3}},treinos:[
+  ['A','Treino A',0,[2],[['bike',1,'8 min',0,'Aquecimento leve'],['leg-press',2,'12-15',75,'Amplitude confortável, sem dor'],['cadeira-flexora',2,'12-15',60],['chest-press',2,'12-15',60],['remada-maq',2,'12-15',60],['elev-lat',2,'12-15',60,'Carga bem leve'],['prancha',2,'20-30s',45]]],
+  ['B','Treino B',0,[4],[['esteira',1,'8 min',0,'Aquecimento leve'],['extensora',2,'12-15',60],['elev-pelvica',2,'12-15',60],['puxada-frente',2,'12-15',60],['desenv-maq',2,'12-15',60],['face-pull',2,'15',60,'Ótimo pra postura'],['abd-supra',2,'15',45]]]]}
+];
+const todosModelos=()=>MODELOS_PADRAO.concat(BIB.modelos||[]);
+const modeloById=id=>todosModelos().find(m=>m.id===id);
+function treinosDoModelo(m){const now=Date.now();
+  return (m.treinos||[]).map(t=>Array.isArray(t)
+    ?{id:uid(),letra:t[0],nome:t[1],fase:t[2]||0,dias:[...t[3]],criadoPor:'personal',criadoEm:now,atualizadoEm:now,exercicios:t[4].map(x=>({uid:uid(),exId:x[0],series:x[1],reps:x[2],carga:'',descanso:x[3],obs:x[4]||''}))}
+    :{...clone(t),id:uid(),criadoPor:'personal',criadoEm:now,atualizadoEm:now,exercicios:(t.exercicios||[]).map(x=>({...x,uid:uid(),carga:''}))})}
+const faseDoModelo=(m,n)=>{const f=(m.fases||{})[String(n)]||{};const tipo=f.tipo||'Personalizada';return {tipo,custom:tipo==='Personalizada'?(f.nome||''):'',semanas:+f.semanas||2,nota:f.nota!==undefined?f.nota:(TIPOS_FASE[tipo]||'')}};
+const resumoModelo=m=>{const ts=m.treinos||[];const nEx=ts.reduce((a,t)=>a+(Array.isArray(t)?t[4]:t.exercicios||[]).length,0);return `${ts.length} treino${ts.length===1?'':'s'} · ${nEx} exercícios${m.freq?' · '+m.freq:''}`};
+function aplicarModelo(p,m,modo){
+  const novos=treinosDoModelo(m);
+  if(modo==='somar'){const usadas=new Set(p.treinos.map(t=>t.letra));const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';novos.forEach(t=>{if(usadas.has(t.letra)){const l=[...L].find(x=>!usadas.has(x));if(l)t.letra=l}usadas.add(t.letra)});p.treinos=p.treinos.concat(novos)}
+  else{p.treinos=novos;p.fases=p.fases||{};[1,2].forEach(n=>{const f=faseDoModelo(m,n);p.fases[String(n)]={tipo:f.tipo,nome:f.tipo==='Personalizada'?(f.custom||'Fase '+n):f.tipo,sub:'',nota:f.nota,semanas:f.semanas}});fixaProg(p)}
+}
+function salvarModeloDe(p,nome,desc){
+  BIB.modelos=BIB.modelos||[];
+  const m={id:'mc-'+uid(),nome,desc,nivel:'',freq:'',meu:true,criadoEm:Date.now(),
+    fases:{'1':{...pick(p.fases&&p.fases['1'])},'2':{...pick(p.fases&&p.fases['2'])}},
+    treinos:p.treinos.map(t=>({letra:t.letra,nome:t.nome,fase:t.fase||0,dias:[...(t.dias||[])],exercicios:t.exercicios.map(x=>({exId:x.exId,series:x.series,reps:x.reps,descanso:x.descanso,obs:x.obs||''}))}))};
+  function pick(f){f=f||{};return {tipo:f.tipo||(TIPOS_FASE[f.nome]!==undefined?f.nome:'Personalizada'),nome:f.nome||'',nota:f.nota||'',semanas:+f.semanas||2}}
+  BIB.modelos.push(m); persist('bib'); return m;
+}
+function vModelosLista(sel,acao){
+  const ms=todosModelos();
+  return ms.map(m=>`<button type="button" class="card mdl ${sel===m.id?'on':''}" data-a="${acao}" data-v="${m.id}">
+    <div class="mdl-h"><b>${esc(m.nome)}</b>${m.meu?'<i>Seu</i>':m.nivel?`<i>${esc(m.nivel)}</i>`:''}</div>
+    ${m.desc?`<p>${esc(m.desc)}</p>`:''}<small>${resumoModelo(m)}</small></button>`).join('');
+}
 function abrirCadastro(id){
   const a=id?alunoById(id):null, p=id?(PROG[id]||progVazio()):null;
   const fx=n=>{const f=p&&p.fases&&p.fases[String(n)]||{};const tipo=f.tipo||(f.nome&&TIPOS_FASE[f.nome]!==undefined?f.nome:(f.nome&&!/^Fase \d$/.test(f.nome)?'Personalizada':(n===1?'Adaptação':'Hipertrofia')));
     return {tipo,custom:tipo==='Personalizada'?(f.nome||''):'',semanas:+f.semanas||2,nota:f.nota!==undefined&&f.nota!==''?f.nota:TIPOS_FASE[tipo]||''}};
   ui.cad={id:id||null,nome:a?a.nome:'',whats:a?(a.whats||''):'',codigo:a?a.codigo:sugereCodigo(''),capa:a?(a.capa||''):'',capaNova:false,
-    objetivos:a?[...(a.objetivos||[])]:[],base:'',f1:fx(1),f2:fx(2),inicio:p&&p.inicio?p.inicio:(id?'':proxSegunda()),auto:p?p.autoFase!==false:true};
+    objetivos:a?[...(a.objetivos||[])]:[],base:'',modelo:'',f1:fx(1),f2:fx(2),inicio:p&&p.inicio?p.inicio:(id?'':proxSegunda()),auto:p?p.autoFase!==false:true};
   ui.view='cadastro';window.scrollTo(0,0);render();
 }
 function calTexto(){const c=ui.cad;if(!c.inicio)return 'Sem data de início: você troca a fase manualmente.';
@@ -1417,8 +1483,13 @@ function vCadastro(){
     <div class="sec"><div class="lbl" style="margin-top:0">Objetivo do aluno</div>
       <div class="opts">${OBJS_P.map(o=>`<button type="button" class="opt ${c.objetivos.includes(o)?'on':''}" data-a="cadObj" data-v="${esc(o)}">${esc(o)}</button>`).join('')}</div>
       <p style="font-size:12px;color:var(--dim);margin-top:8px">Marque um ou mais.</p></div>
-    ${c.id?'':`<div class="sec"><div class="lbl" style="margin-top:0">Treinos</div>
-      <select class="inp" data-f="cad" data-k="base"><option value="">Começar com programa vazio</option>${ALU.lista.map(x=>`<option value="${x.id}" ${c.base===x.id?'selected':''}>Cópia do programa de ${esc(x.nome)}</option>`).join('')}</select></div>`}
+    ${c.id?'':`<div class="sec"><div class="lbl" style="margin-top:0">Programa de treino</div>
+      <p style="font-size:13px;color:var(--mut);margin:-2px 0 10px">Escolha um modelo pronto. Depois você ajusta o que precisar em Treinos.</p>
+      <div class="tl">
+        <button type="button" class="card mdl ${!c.modelo&&!c.base?'on':''}" data-a="cadModelo" data-v=""><div class="mdl-h"><b>Começar do zero</b></div><small>Programa vazio</small></button>
+        ${vModelosLista(c.modelo,'cadModelo')}
+      </div>
+      ${ALU.lista.length?`<label style="display:block;margin-top:12px"><span class="fl">Ou copiar o programa de um aluno</span><select class="inp" data-f="cadBase"><option value="">Não copiar</option>${ALU.lista.map(x=>`<option value="${x.id}" ${c.base===x.id?'selected':''}>${esc(x.nome)}</option>`).join('')}</select></label>`:''}</div>`}
     <div class="sec"><div class="lbl" style="margin-top:0">Fases e calendário</div>
       <label><span class="fl">Início do programa</span><input class="inp" type="date" data-f="cad" data-k="inicio" value="${esc(c.inicio)}"></label>
       ${vFaseCad(1)}${vFaseCad(2)}
@@ -1443,7 +1514,8 @@ async function salvarCadastro(){
   } else {
     id=FB?await keyDe(cod):'a'+uid();
     let p=progVazio();
-    if(c.base&&PROG[c.base]){p=clone(PROG[c.base]);p.faseAtiva=1;p.treinos.forEach(t=>{t.id=uid();t.atualizadoEm=Date.now();t.exercicios.forEach(x=>{x.uid=uid();x.carga=''})})}
+    if(c.modelo&&modeloById(c.modelo)){p.treinos=treinosDoModelo(modeloById(c.modelo))}
+    else if(c.base&&PROG[c.base]){p=clone(PROG[c.base]);p.faseAtiva=1;p.treinos.forEach(t=>{t.id=uid();t.atualizadoEm=Date.now();t.exercicios.forEach(x=>{x.uid=uid();x.carga=''})})}
     aplica(p); PROG[id]=p; HIST[id]=histVazio();
     ALU.lista.push({id,nome,codigo:cod,whats:String(c.whats||'').trim(),objetivos:[...c.objetivos],criadoEm:Date.now(),capa:c.capa||''});
     persist('alunos'); persist('prog:'+id); persist('hist:'+id);
@@ -1571,7 +1643,8 @@ function vTreinos(){
     ${isP()?vSelBar()+vFaseBar():vFaseBar()}
     <div class="lbl">${esc(faseInfo(faseVer()).nome)} · ${lista.length} treino${lista.length===1?'':'s'}</div>
     ${lista.length?`<div class="tl">${lista.map(tCard).join('')}</div>`:`<div class="card empty">${isP()?'Nenhum treino nesta fase ainda.':'Seu personal ainda não montou seus treinos.'}</div>`}
-    ${isP()?`<button class="btn ghost full" style="margin-top:12px" data-a="novo">${P(IC.plus,18)} Novo treino</button>`:''}
+    ${isP()?`<button class="btn ghost full" style="margin-top:12px" data-a="novo">${P(IC.plus,18)} Novo treino</button>
+      <div class="row" style="margin-top:10px"><button class="btn dark" style="flex:1" data-a="abrirModelos">${P(IC.copy,16)} Usar modelo</button><button class="btn dark" style="flex:1" data-a="salvarModelo">Salvar como modelo</button></div>`:''}
   </main>`;
 }
 function vSemana(){
@@ -1849,6 +1922,24 @@ function vModal(){
     <div class="col"><a class="btn wa full" href="${esc(waLink(a))}" target="_blank" rel="noopener">Enviar no WhatsApp</a>
     <button class="btn dark full" data-a="copiarMsg" data-id="${a.id}">${P(IC.copy,16)} Copiar mensagem</button>
     <button class="link" style="color:var(--mut)" data-a="fecharModal">Fechar</button></div></div></div>`}
+  if(m.tipo==='modelos'){const a=alunoById(ui.alunoSel),pf=a&&PERF[a.id]||{},sel=m.sel&&modeloById(m.sel),tem=S.treinos.length;
+    return `<div class="ov" data-a="fecharModal" data-self="1"><div class="sheet">
+    <div class="sheet-h"><b>Usar modelo${a?' · '+esc(a.nome):''}</b><button class="ib" data-a="fecharModal">${P(IC.x,18)}</button></div>
+    <div class="sheet-b" style="padding-bottom:20px">
+      ${pf.limitacoes?`<div class="lim" style="margin-bottom:12px"><small>Atenção · limitações do aluno</small>${esc(pf.limitacoes)}</div>`:''}
+      <div class="tl">${vModelosLista(m.sel,'mdlSel')}</div>
+      ${(BIB.modelos||[]).length?'':'<p style="font-size:12px;color:var(--dim);margin-top:12px">Dica: monte um programa num aluno e toque em “Salvar como modelo” pra ele aparecer aqui.</p>'}
+    </div>
+    ${sel?`<div class="sheet-f" style="display:block">${tem?`<p style="font-size:13px;color:var(--mut);margin-bottom:10px">${esc(a?a.nome:'O aluno')} já tem ${tem} treino${tem>1?'s':''}. <b>Substituir</b> troca tudo, incluindo as fases. <b>Somar</b> só adiciona os treinos.</p>`:''}
+      <div class="row" style="display:flex;gap:10px">${tem?`<button class="btn dark" style="flex:1" data-a="mdlAplicar" data-modo="somar">Somar</button><button class="btn y" style="flex:1" data-a="mdlAplicar" data-modo="substituir">Substituir</button>`:`<button class="btn y full" data-a="mdlAplicar" data-modo="substituir">Aplicar modelo</button>`}</div>
+      ${sel.meu?`<button class="link" style="color:var(--red);width:100%;margin-top:10px" data-a="mdlExcluir" data-v="${sel.id}">Excluir este modelo</button>`:''}</div>`:''}
+  </div></div>`}
+  if(m.tipo==='salvarModelo') return `<div class="ov c" data-a="fecharModal" data-self="1"><form class="dlg" id="fModelo">
+    <h3>Salvar como modelo</h3><p>Os ${S.treinos.length} treinos e as fases viram um modelo. As cargas do aluno não vão junto.</p>
+    <label>Nome do modelo</label><input class="inp" name="nome" required value="${esc(m.nome||'')}">
+    <label>Descrição (opcional)</label><input class="inp" name="desc" placeholder="Ex.: pra quem treina 4x e quer força">
+    <div class="row" style="margin-top:16px"><button type="button" class="btn dark" data-a="fecharModal">Cancelar</button><button class="btn y">Salvar</button></div>
+  </form></div>`;
   if(m.tipo==='trocarCod') return `<div class="ov c" data-a="fecharModal" data-self="1"><form class="dlg" id="fTrocaCod">
     <h3>Trocar código</h3><p>Escolha um código novo com pelo menos 6 letras ou números. O antigo para de funcionar na hora.</p>
     <label>Novo código</label><input class="inp" name="c1" autocapitalize="characters" autocorrect="off" spellcheck="false" required style="letter-spacing:.06em;font-weight:700">
@@ -2000,6 +2091,12 @@ const acts = {
   bnMover:d=>{const i=+d.i,j=i+(+d.d);if(j<0||j>=BANNERS.length)return;[BANNERS[i],BANNERS[j]]=[BANNERS[j],BANNERS[i]];render();salvaBanners()},
   cadCancelar:()=>{const id=ui.cad&&ui.cad.id;ui.cad=null;ui.view=id?'aluno':null;if(!id)ui.tab='painel';render()},
   cadSalvar:()=>salvarCadastro(),
+  cadModelo:d=>{const c=ui.cad;c.modelo=d.v;c.base='';const m=d.v&&modeloById(d.v);if(m){c.f1=faseDoModelo(m,1);c.f2=faseDoModelo(m,2)}const y=window.scrollY;render();window.scrollTo(0,y)},
+  abrirModelos:()=>{ui.modal={tipo:'modelos',sel:''};renderOv()},
+  mdlSel:d=>{ui.modal.sel=ui.modal.sel===d.v?'':d.v;renderOv()},
+  mdlAplicar:d=>{const m=modeloById(ui.modal.sel);if(!m)return;aplicarModelo(S,m,d.modo);S.faseAtiva=S.faseAtiva||1;ui.faseVer=d.modo==='somar'?ui.faseVer:1;persistS();ui.modal=null;render();toast(d.modo==='somar'?'Treinos adicionados':'Modelo aplicado. Agora é só ajustar')},
+  mdlExcluir:d=>{BIB.modelos=(BIB.modelos||[]).filter(m=>m.id!==d.v);persist('bib');ui.modal.sel='';renderOv();toast('Modelo excluído')},
+  salvarModelo:()=>{if(!S.treinos.length)return toast('Monte pelo menos um treino antes');const a=alunoById(ui.alunoSel);ui.modal={tipo:'salvarModelo',nome:'Programa '+(a?a.nome:'')};renderOv()},
   cadGerar:()=>{ui.cad.codigo=sugereCodigo(ui.cad.nome);render()},
   cadObj:d=>{const o=ui.cad.objetivos,i=o.indexOf(d.v);i>=0?o.splice(i,1):o.push(d.v);render()},
   cadTipo:d=>{const f=ui.cad['f'+d.n],antes=TIPOS_FASE[f.tipo]||'';f.tipo=d.v;if(!f.nota||f.nota===antes)f.nota=TIPOS_FASE[d.v]||'';render()},
@@ -2052,6 +2149,7 @@ document.addEventListener('input',e=>{
   if(f==='busca'){ui.busca=el.value;$('#libList').innerHTML=listaEx(filtraEx(ui.filtro,ui.busca));return}
   if(f==='pbusca'){ui.picker.busca=el.value;$('#pickList').innerHTML=listaEx(filtraEx(ui.picker.filtro,ui.picker.busca),ui.picker.sel);return}
   if(f==='set'){A.itens[+el.dataset.i].series[+el.dataset.s][el.dataset.k]=el.value;lsSet('ativa',A);return}
+  if(f==='cadBase'&&ui.cad){ui.cad.base=el.value;if(el.value){ui.cad.modelo='';document.querySelectorAll('.mdl.on').forEach(b=>b.classList.remove('on'))}return}
   if(f==='cad'&&ui.cad){ui.cad[el.dataset.k]=el.value;if(el.dataset.k==='inicio'){const c=$('#cadCal');if(c)c.innerHTML=calTexto()}return}
   if(f==='cadF'&&ui.cad){ui.cad['f'+el.dataset.n][el.dataset.k]=el.value;if(el.dataset.k==='custom'){const c=$('#cadCal');if(c)c.innerHTML=calTexto()}return}
   if(f==='cadAuto'&&ui.cad){ui.cad.auto=el.checked;const c=$('#cadCal');if(c)c.innerHTML=calTexto();return}
@@ -2108,6 +2206,7 @@ document.addEventListener('submit',async e=>{
   const id=e.target.id, fd=new FormData(e.target);
   if(id==='fLogin') return FB?entrarFB(fd.get('codigo')):entrar(fd.get('nome'),fd.get('codigo'));
   if(id==='fLoginP') return entrarPersonal(fd.get('email'),fd.get('senha'));
+  if(id==='fModelo'){const nome=String(fd.get('nome')||'').trim();if(!nome)return;salvarModeloDe(S,nome,String(fd.get('desc')||'').trim());ui.modal=null;renderOv();toast('Modelo salvo');return}
   if(id==='fTrocaCod'){
     const m=ui.modal, c1=limpaCod(fd.get('c1')), c2=limpaCod(fd.get('c2'));
     if(c1!==c2){m.err='Os dois códigos não são iguais.';return renderOv()}
